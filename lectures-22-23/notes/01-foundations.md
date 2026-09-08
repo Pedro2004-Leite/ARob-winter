@@ -37,19 +37,19 @@ Slides are in English; occasional Portuguese course-title text ("Aeronaves Robot
 ### Weekly schedule (as planned 2022/23, useful to map chapter numbers to weeks)
 | Week | Date | Lecture | Lab |
 |---|---|---|---|
-|1|19-Set|Ch0 Intro Part I|enroll|
-|2|26-Set|Ch0 Intro Part II|L1|
-|3|03-Out|Ch1 Rigid Body| |
-|4|10-Out|Ch2 Quadrotor Modeling|L1|
-|5|17-Out|Ch3 Quadrotor Control Intro|L1|
-|6|24-Out|Ch4 Modern Control Design|RL1|
-|7|31-Out|(1st November holiday)|L2|
+|1|19-Sep|Ch0 Intro Part I|enroll|
+|2|26-Sep|Ch0 Intro Part II|L1|
+|3|03-Oct|Ch1 Rigid Body| |
+|4|10-Oct|Ch2 Quadrotor Modeling|L1|
+|5|17-Oct|Ch3 Quadrotor Control Intro|L1|
+|6|24-Oct|Ch4 Modern Control Design|RL1|
+|7|31-Oct|(1st November holiday)|L2|
 |8-9|07/14-Nov|mid term| |
 |10|21-Nov|Ch5 Sensors (Beard & McLain)|L2|
 |11|28-Nov|Ch6 State Estimation (Beard & McLain)|L2|
-|12|05-Dez|Q&A|RL2|
-|13|12-Dez|Ch7 Intro Nonlinear Control|L3|
-|14|19-Dez|Ch8 Path Following|L3|
+|12|05-Dec|Q&A|RL2|
+|13|12-Dec|Ch7 Intro Nonlinear Control|L3|
+|14|19-Dec|Ch8 Path Following|L3|
 |(Christmas holiday)| | | |
 |15|02-Jan|Ch9 PathManager|L3|
 |16|09-Jan|Q&A|RL3|
