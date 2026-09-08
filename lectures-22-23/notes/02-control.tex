@@ -1,0 +1,244 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{DejaVu Math TeX Gyre}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[C]{\footnotesize ARob -- UAVs / Aeronaves Robotizadas}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{26pt}
+\sloppy
+\emergencystretch=2em
+\title{Control: Quadrotor Control Intro \& Modern Control Design}
+\author{Course notes -- Autumn 2022/23}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+Source files:
+\begin{itemize}
+\item 22\_\allowbreak{}23\_\allowbreak{}UAVs\_\allowbreak{}Ch3\_\allowbreak{}Quadrotor\_\allowbreak{}Control\_\allowbreak{}Intro.pdf (44 slides, "Quadrotor Trajectory Tracking Control - An Introduction")
+\item 22\_\allowbreak{}23\_\allowbreak{}UAVs\_\allowbreak{}Ch4\_\allowbreak{}Modern\_\allowbreak{}Control\_\allowbreak{}Design.pdf (43 slides, "Modern Control Design")
+\end{itemize}
+
+Course: UAVs, MEAer (Técnico Lisboa), Autumn Semester 2022/2023. Instructors: Rita Cunha / J.R. Azinheira.
+Ch4's first part follows "Modern Control Design" lecture notes by Pedro Batista (Feb 2018); the LQR/pole-placement worked example is adapted from J. Hespanha, \textit{Linear Systems Theory}, Princeton Univ. Press, 2009 (aircraft roll dynamics example).
+
+\section{Chapter 3 - Quadrotor Control Introduction}
+
+\subsection{Starting point: the quadrotor dynamic model}
+From Ch1/Ch2 (rigid body + quadrotor modeling), the equations of motion used throughout are:
+
+\begin{itemize}
+\item Translational dynamics: $m \ddot{p} = -T r3 + m g e3$, with $r3 = R e3$ (third column of the rotation matrix, i.e. the body z-axis expressed in the inertial frame).
+\item Attitude kinematics: $\dot{R} = R S(\omega)$ (S(.) = skew-symmetric operator, so $S(\omega) v = \omega x v$).
+\item Rotational dynamics: $J \dot{\omega} = -S(\omega) J \omega + n$.
+\end{itemize}
+
+Inputs to the system are total thrust \texttt{T} (scalar) and torque \texttt{n} (3-vector). Outputs of interest are position/velocity \texttt{(p, p\_\allowbreak{}dot)} and attitude/angular velocity \texttt{(R, omega)}.
+
+Small-angle/near-hover exercise: linearizing \texttt{p\_\allowbreak{}ddot} near hover with roll \texttt{phi} and pitch \texttt{theta} gives $\ddot{p} ≈ [-g \theta, g \phi, 0]^T$ — this is the classical result that pitch controls x-acceleration and roll controls y-acceleration (sign convention as defined by the course's rotation order).
+
+\subsection{Control objective and hierarchical (cascade) structure}
+Objective: \textbf{trajectory tracking}. Given a desired flat-output trajectory $(p (t), \psi (t))$ (position + yaw), find \texttt{(T, n)} such that $(p(t), \psi(t)) \to  (p (t), \psi (t))$ as $t \to  \infty$.
+
+Because of the block-diagram dependency structure (rotational dynamics feed into translational dynamics via \texttt{r3}), the natural design is \textbf{hierarchical/cascade control}:
+\begin{itemize}
+\item \textbf{Outer loop (position controller)}: takes $(p , \dot{p} , \ddot{p} )$ and \texttt{(p, p\_\allowbreak{}dot)}, produces desired thrust \texttt{T} and a desired direction \texttt{r3d} for the body z-axis. Goal: track position.
+\item \textbf{Inner loop (attitude controller)}: takes the desired attitude (derived from \texttt{r3d} and desired yaw $\psi $) and current \texttt{(R, omega)}, produces torque \texttt{n}. Goal: track attitude. Runs faster (5-10x bandwidth) than the outer loop, which is the standard justification for treating the loops as (approximately) independent SISO problems.
+\end{itemize}
+
+Design recipe (4 steps):
+\begin{enumerate}
+\item \textbf{Neglect rotational dynamics}: replace \texttt{r3} by a desired \texttt{r3d}, define virtual input $u_T = -(T/m) r3d$. Then $T = m \|u_T\|$ and $r3d = -u_T/\|u_T\|$ (T is magnitude, r3d is direction).
+\item \textbf{Design a control law for \texttt{u\_\allowbreak{}T}} assuming $\ddot{p} = u_T + g e3$ (or $= u_T + g$ in the slide's shorthand).
+\item \textbf{Combine \texttt{r3d} with $\psi $} to get a full desired attitude \texttt{R\_\allowbreak{}d} (or Euler-angle equivalent $lambda_d = (phi_d, theta_d, \psi )$). One explicit formula given: $r3d = Rz(\psi ) Ry(theta_d) Rx(phi_d) e3$, leading to $[\cos(phi_d)\sin(theta_d), -\sin(phi_d), \cos(phi_d)\cos(theta_d)]^T = Rz(-\psi ) r3d$ — i.e. invert this to solve for \texttt{(phi\_\allowbreak{}d, theta\_\allowbreak{}d)} given \texttt{r3d} and $\psi $.
+\item \textbf{Design a control law for \texttt{n}} to track \texttt{R\_\allowbreak{}d}/\texttt{lambda\_\allowbreak{}d}, using either the rotation-matrix kinematics $\dot{R} = R S(\omega)$ or the Euler-angle form $\dot{\lambda} = Q(\phi,\theta) \omega$ together with $J \dot{\omega} = -S(\omega) J \omega + n$.
+\end{enumerate}
+
+\subsection{Position (translational) controller design}
+Model: $\ddot{p} = u_T + g$ (per-axis double integrator with gravity offset), reference $(p (t), \dot{p} (t), \ddot{p} (t))$.
+
+Error variables: $e = p - p $, $\dot{e} = \dot{p} - \dot{p} $, giving $\ddot{e} = u_T + g - \ddot{p} $.
+
+\textbf{PD control law}: $u_T(t) = -kP e(t) - kD \dot{e}(t) - g + \ddot{p} (t)$, which yields the clean closed-loop error dynamics $\ddot{e}(t) = -kP e(t) - kD \dot{e}(t)$ (feedback term) $+ \ddot{p} $ (feedforward term, cancels out in the error equation). This is a linear 2nd-order system:
+\begin{itemize}
+\item Stable (asymptotically) iff $kP > 0$ and $kD > 0$ — \texttt{kP} acts like a spring, \texttt{kD} like a damper.
+\item Standard 2nd order form comparison: closed-loop transfer function $P(s)/P (s) = (kP + kD s) / (s^2 + kD s + kP)$, compared against $G(s) = wn^2/(s^2 + 2 \xi wn s + wn^2)$.
+\item Damping ratio: $\xi = kD / (2 \sqrt{kP})$. Increasing \texttt{kD} increases \texttt{xi} (less overshoot); increasing \texttt{kP} decreases \texttt{xi}. Settling time improves as \texttt{kD} increases ($\xi wn$ increases).
+\end{itemize}
+
+\subsection{Classical SISO analysis tools used}
+\begin{itemize}
+\item \textbf{Root locus}: rewrite $C(s) = kP + kD s = k (s+z)/z$ with $z = kP/kD$, $k = kP$, open-loop $G(s) = k (s+z)/(z s^2)$. Increasing gain \texttt{k} (with fixed zero \texttt{z}) pulls the poles further into the left half-plane -> faster, less oscillatory response (compare $k=1,z=1$ vs $k=24,z=2$ step responses).
+\item \textbf{Bode / loop-shaping}: with the open-loop $L(s) = k (s+z)/(z s^2)$, read off:
+\begin{itemize}
+\item Gain margin \texttt{GM} and phase margin \texttt{PM} from the Bode plot (example: $k=24, z=2$ gives $GM = +inf$, $PM = 80.7°$ at crossover $wc = 12.2 rad/s$).
+\item Maximum tolerable pure time delay from phase margin: $\tau < tau_c = PM / wc$ (numerically $0.116 s$ in the example).
+\item \textbf{Noise attenuation} spec: require $|Y(jwn)/N(jwn)|_dB \le  -10 dB$ for \texttt{wn} in a high-frequency band (e.g. $[100, 1000] rad/s$), i.e. the loop gain must roll off enough at high frequency.
+\item \textbf{Disturbance attenuation} spec: require $|Y(jwd)/D(jwd)|_dB \le  -80 dB$ for low-frequency disturbances \texttt{wd} in e.g. $[0.01, 0.1] rad/s$, i.e. $|G(jwd)|_dB \ge  80 dB$ (high loop gain at low frequency).
+\item \textbf{Reference-following} spec similarly requires $|G(jwr)|_dB \ge  100 dB$ for the reference-frequency band.
+\end{itemize}
+\end{itemize}
+
+\subsection{Disturbance rejection and integral action}
+Question posed: does the PD-controlled position loop reject a \textbf{constant wind disturbance} modeled as an acceleration input \texttt{w}? Using the final value theorem on $Y(s)/W(s) = 1/(s^2+C(s))$ with $W(s) = w0/s$: \textbf{No} — steady-state error $y (t) \to  r(t) + w0/k$ (a constant offset proportional to disturbance magnitude and inversely proportional to gain $k = kP$).
+
+\textbf{Fix: add integral action -> PID controller.} Strategy shown as adding a zero and an integrator to go from PD to PID:
+$C_PD(s) = k (s+z)/z$ -> $C_PID(s) = k (s+z)(s+z1) / (z z1 s)$, equivalently $C(s) = kP + kI/s + kD s = (kD s^2 + kP s + kI)/s$.
+With integral action, $Y(s)/W(s) = s / (s^2 + kD s^2 + kP s + kI)$ (note the extra \texttt{s} in the numerator from the integrator), so $lim y(t) = lim s Y(s) = 0$ for a step disturbance — the constant wind offset is rejected. Design guidance: keep the existing zero at \texttt{-z}, add the new integrator/zero pair at \texttt{-z1} (example: $k=16, z=2, z1=0.5$).
+
+Exercise left in the slides (unsolved): repeat the wind-rejection analysis for a \textbf{velocity} disturbance input instead of acceleration.
+
+An experimental result slide shows a real quadrotor holding position in front of a desk fan (physical demonstration of disturbance rejection).
+
+\subsection{Extending hierarchical control to full state feedback (bridge to Ch4)}
+\begin{itemize}
+\item Adding integral action to the position loop is generalized as \textbf{state feedback with an augmented integrator state}: $u_T(t) = -kP (p-p ) - kD (\dot{p}-\dot{p} ) - kI Integral(p-p ) - g e3 + \ddot{p} (t)$.
+\item The \textbf{attitude controller} is derived by linearizing about hover: equilibrium $lambda_0 = [0,0,\psi ]^T$, $omega_0 = 0$, $n_0 = 0$. Standard linearization $delta_xdot = (df/dx)|_eq   delta_x + (df/du)|_eq   delta_u$ applied to $\dot{\lambda} = Q(\phi,\theta) \omega$, $J \dot{\omega} = -S(\omega) J \omega + n$ gives, when \texttt{J} is diagonal, a decoupled double-integrator per axis: $\dot{delta_lambda} = delta_omega$, $J \dot{delta_omega} = delta_n$. A \textbf{PD controller} is then used: $n = delta_n = -k1 (\lambda - lambda_d) - k2 \omega$.
+\item \textbf{Full hierarchical block diagram} (position PID -> attitude PD -> rotational dynamics -> translational dynamics) is reduced, for design purposes, to a simplified nested SISO model: outer loop $kp + kv s$ around an inner loop $(k_lambda + k_omega s)$ feeding two integrators $1/s   1/s$ (attitude+angular rate) into the position double integrator $1/s^2$. Design rule of thumb: make the inner loop 5-10x faster (higher bandwidth) than the outer loop so they can be tuned quasi-independently. Root-locus examples compare $C1(s)=5(s+1)$ inner vs $C2(s)=10(s+2.5)$ outer (well-separated, clean step response) against $C2(s)=3(s+2.5)$ (insufficient separation -> oscillatory response).
+\item \textbf{Full pole-placement version (last slides, bridging into Ch4's state-space viewpoint)}: model the whole cascade (position PID error states + inner-loop dynamics) as one augmented state-space system and place poles directly with a single gain vector \texttt{K}, e.g. $K = place(A2, B2, [-0.5+0.2i, -0.5-0.2i, -0.1, roots([1, k_omega, k_lambda])])$, giving a 5-element state feedback gain $u = theta_r = [0.029, 0.419, 1.4973, 1.1975, 0.275]   [x_I; y-r; ydot-rdot; \theta; thetadot]$. Explicitly noted: \textbf{this is no longer hierarchical} — it's a single full-state feedback law over the combined state, which is exactly the "modern control design" (state-space) approach developed in Ch4.
+\end{itemize}
+
+\section{Chapter 4 - Modern Control Design}
+
+Two parts: (1) general linear state-space control/estimation theory (controllability, observability, pole placement, observers, LQR), following P. Batista's notes; (2) a worked LQR design example on aircraft roll dynamics (from Hespanha's textbook), connecting LQR back to loop-shaping/Bode ideas used in Ch3.
+
+\subsection{Linear state-space models}
+General (possibly time-varying) form: $\dot{x}(t) = A(t)x(t) + B(t)u(t)$, $y(t) = C(t)x(t) + D(t)u(t)$. The course always sets $D(t) = 0$ (no direct feedthrough). When \texttt{A, B, C} are constant -> \textbf{LTI system}: $\dot{x} = Ax + Bu$, $y = Cx$.
+
+\begin{itemize}
+\item \textbf{Transfer function matrix} (LTI only): Laplace transform with zero initial conditions gives $Y(s) = C(sI-A)^-1 B U(s)$, i.e. $G(s) = C(sI-A)^-1 B$.
+\item \textbf{Time-domain solution} (LTI, initial state \texttt{x0} at \texttt{t0}): $x(t) = e^{A(t-t0)} x0 + Integral_{t0}^{t} e^{A(t-\sigma)} B u(\sigma) dsigma$, and correspondingly for \texttt{y(t)}.
+\end{itemize}
+
+\subsection{Controllability}
+Definition: the system is controllable on \texttt{[t0, tf]} if for any \texttt{x0}, there exists a continuous input \texttt{u(t)} driving $x(tf) = 0$ (note the slide's convention: driving state to \textbf{zero}, not to an arbitrary target — equivalent statement for LTI systems since the reachable set is a subspace).
+
+\textbf{Theorem (LTI)}: the system is controllable iff the controllability matrix $C := [B, AB, A^2 B, ..., A^{n-1} B]$ has full rank \texttt{n} (n = number of states).
+Worked 2-state examples: $A=[[0,1],[0,0]]$, $B=[0,1]$ (i.e. $xdot1=x2, xdot2=u$) is controllable (\texttt{C} full rank); $A=[[0,1],[0,0]]$, $B=[1,0]$ (i.e. $xdot1 = x2+u, xdot2=0$) is \textbf{not} controllable (rank-deficient \texttt{C}) — intuition: \texttt{x2} is never affected by \texttt{u}, so it cannot be driven.
+
+\subsection{Observability}
+Definition: observable on \texttt{[t0,tf]} if the initial state \texttt{x0} is uniquely determined from \texttt{y(t)} for \texttt{t} in \texttt{[t0,tf]}. Explicitly noted: for \textbf{known-input} LTV systems, observability does not depend on whether \texttt{u} is zero or not (subtract the known-input contribution from the output first) — for nonlinear systems this does NOT hold in general (much harder analysis).
+
+\textbf{Theorem (LTI)}: observable iff the observability matrix $O := [C; CA; ...; CA^{n-1}]$ has full rank \texttt{n}.
+Worked examples mirror controllability: $C=[1,0]$ on the same \texttt{A} is observable; $C=[0,1]$ is not (can't tell \texttt{x1} apart from the output).
+
+\subsection{State feedback and pole placement}
+Linear state feedback: $u(t) = r(t) - K x(t)$ (block diagram: reference \texttt{r}, minus \texttt{Kx} feedback, into $xdot=Ax+Bu$).
+
+\textbf{Pole placement theorem}: if \texttt{(A,B)} is controllable, then for \textbf{any} desired real monic degree-n polynomial \texttt{p(lambda)}, there exists a constant gain \texttt{K} such that $\det(\lambda I - A + BK) = p(\lambda)$ — i.e. the closed-loop eigenvalues can be placed arbitrarily.
+
+\subsection{State observers (Luenberger observer)}
+Motivation: state feedback needs the full state, which usually isn't measured directly -> build a state estimate.
+
+\textbf{Luenberger observer}: $\dot{xhat}(t) = A(t)xhat(t) + B(t)u(t) + L(t)[y(t) - C(t)xhat(t)]$ — a copy of the plant driven by the actual input, corrected by the output estimation error weighted by gain \texttt{L}.
+
+Estimation error $xtilde := x - xhat$ obeys $\dot{xtilde}(t) = [A(t) - L(t)C(t)] xtilde(t)$ — autonomous linear dynamics independent of \texttt{u} and \texttt{y}; convergence requires \texttt{A-LC} to be stable (eigenvalues negative real part / Hurwitz).
+
+\textbf{Duality}: eigenvalues of \texttt{A - LC} equal eigenvalues of $(A-LC)^T = A^T - C^T L^T$. This maps the observer design problem onto the pole-placement problem under the substitution $A <\to  A^T$, $B <\to  C^T$, $K <\to  L^T$ — i.e. designing \texttt{L} for observability is mathematically identical to designing \texttt{K} for controllability, just transposed. Observer poles chosen via $L = place(A', C', pCL)'$ in the worked example (reusing the same closed-loop pole set as the LQR design, $pCL = eig(A-B K)$).
+
+\subsection{Combining state feedback + observer: separation principle}
+Using estimated state in the feedback law: $u(t) = r(t) - K xhat(t)$. Substituting gives the augmented \texttt{[x; xtilde]} system:
+$[xdot; xtildedot] = [[A-BK, BK],[0, A-LC]] [x; xtilde] + [B;0] r(t)$, $y = [C, 0][x; xtilde]$.
+
+\textbf{Theorem/Separation principle}: because the augmented system matrix is block upper-triangular, its eigenvalues are exactly the union of the eigenvalues of \texttt{A-BK} and \texttt{A-LC}. \textbf{Conclusion: controller gain \texttt{K} and observer gain \texttt{L} can be designed completely independently} by pole placement (or, more strongly, independently as \textit{optimal} LQR/estimator problems — "more on this later" per the slides). This does \textbf{not} generalize to nonlinear systems (no general separation result).
+
+\subsection{Optimal control: Linear Quadratic Regulator (LQR)}
+Motivation: pole placement lets you "shape" closed-loop dynamics but doesn't optimize anything; LQR minimizes a cost.
+
+\textbf{LQR problem}: for $xdot=Ax+Bu$, minimize $J = Integral_0^inf [x^T(t) Q x(t) + u^T(t) R u(t)] dt$, with \texttt{Q} positive semi-definite and \texttt{R} positive definite.
+
+\textbf{Theorem}: if \texttt{(A,B)} is \textit{stabilizable} and \texttt{(A,G)} is \textit{detectable} (with $Q = G^T G$), then:
+\begin{itemize}
+\item There is a unique positive-definite solution \texttt{P} to the \textbf{algebraic Riccati equation (ARE)}: $A^T P + P A + Q - P B R^-1 B^T P = 0$.
+\item The optimal feedback is $u(t) = -Kx(t)$ with $K := R^-1 B^T P$, achieving minimum cost $J = x^T(0) P x(0)$.
+\item All closed-loop eigenvalues of \texttt{A - BK} have negative real part (guaranteed stability, not just optimality).
+\end{itemize}
+
+Stabilizability/detectability are \textbf{relaxations} of full controllability/observability: \texttt{(A,B)} stabilizable means only the \textit{uncontrollable modes} need to be stable (don't need to control already-stable modes); \texttt{(A,G)} detectable means only the \textit{unobservable modes} need to be stable.
+
+\textbf{Tuning \texttt{Q}/\texttt{R} — Bryson's rule} (rule of thumb, "trial and error" per the slides): $Q_ii = 1 / (max acceptable value of x_i^2)$, $R_ii = 1 / (max acceptable value of u_i^2)$. Larger \texttt{Q} relative to \texttt{R} -> more control effort spent to keep the state small; larger \texttt{R} relative to \texttt{Q} -> conserve control effort at the cost of larger state excursions.
+
+\subsection{LQR worked example: aircraft roll dynamics (bridges LQR back to loop-shaping)}
+Linearized model (from Hespanha's book): $\dot{\phi} = \omega$, $\dot{\omega} = 0.8 \omega - 20 \tau$, $\dot{\tau} = -50 \tau + 50 u$; state $x=[\phi,\omega,\tau]$, output $y=\phi=Cx$ with $C=[1,0,0]$,
+$A = [[0,1,0],[0,-0.8,-20],[0,0,-50]]$, $B = [0,0,50]^T$.
+
+Cost: $J = Integral (x^T Q x + \rho u^2) dt$, with $Q = G^T G$, $G = [[1,0,0],[0,\gamma,0]]$ (design weights $\rho>0$, $\gamma>0$), so the "regulated output" is $z(t) = G x(t) = [\phi; \gamma \omega]$ — i.e. penalize roll angle and (scaled) roll rate, plus control effort weighted by \texttt{rho}.
+
+Loop-shaping connection: define $P(s) = (sI-A)^-1 B$ (plant, u to x), $L(s) = K P(s) = (sI-A)^-1 B K$ (open-loop, scalar since SISO from \texttt{-u\_\allowbreak{}bar} to \texttt{x} through \texttt{K}). Standard \texttt{GM}, \texttt{PM}, noise/disturbance/reference-tracking specs from Ch3 all carry over directly to this \texttt{L(s)}.
+
+\textbf{Kalman's equality} (derivable from the ARE): $|1 + L(jw)|^2 = |1 + KP(jw)|^2 = 1 + \|G P(jw)\|^2 / \rho$. With $P(s) = [P1(s); s P1(s); P3(s)]$ at low frequency, $|L(jw)| ≈ |1 + j \gamma w|   |P1(jw)| / \sqrt{\rho}$.
+
+Effects of the two design weights (matched to simulated Bode/step-response families in the slides):
+\begin{itemize}
+\item \textbf{Decreasing \texttt{rho}} (cheaper control) moves the Bode magnitude plot up -> higher loop gain -> faster response, less sensitivity to disturbances, but at the cost of more control effort (intuition: "input becomes cheaper").
+\item \textbf{Increasing \texttt{gamma}} (penalizing roll rate more) increases the phase margin -> less overshoot but slower response (intuition: increasing the cost of angular velocity discourages fast maneuvers).
+\end{itemize}
+
+\subsection{Luenberger observer worked example (same roll-dynamics system)}
+MATLAB-style snippet shown:
+\scriptsize
+\begin{verbatim}
+R = 1;
+G = [1 0 0; 0 .3 0]; Q = G'*G;
+K = lqr(A,B,Q,R);            % K = [-1.0000, -0.4105, 0.1526]
+damp(A-B*K)                  % closed-loop eigenvalues/damping/freq listed
+pCL = eig(A-B*K);
+L = place(A',C',pCL)';       % choose same poles for the observer (duality)
+esR = estim(ss(A,B,C,0), L, 1, 1);   % build the observer/estimator object
+\end{verbatim}
+\normalsize
+Closed-loop LQR poles: a complex pair $-4.40 ± 0.905i$ (damping ≈0.979, freq ≈4.49 rad/s) and a fast real pole \texttt{-49.6}. Observer gain obtained by placing the \textit{same} pole locations via the transposed (dual) problem: $L = [7.6275, 29.0897, 37.9793]^T$.
+
+A Simulink block-diagram slide contrasts \textbf{"LQR ideal feedback"} (full-state feedback using the true state \texttt{x}, i.e. \texttt{-Kx}) against \textbf{"LQR + observer feedback"} (feedback using the estimated state \texttt{xhat} from a noisy sensor, i.e. $-K xhat$). Simulation plots (step response) show: (1) outputs — the observer-based response tracks the ideal-feedback response closely after a brief transient; (2) measurement — a noisy sensor signal converging to -1; (3) control input — a transient spike near t≈1 (when the step hits) then settling to a small noisy value around 0, demonstrating the observer-based controller performs comparably to ideal state feedback despite only having noisy output measurements.
+
+\section{Key equations reference}
+
+\begin{itemize}
+\item Quadrotor translational/rotational dynamics: $m \ddot{p} = -T r3 + m g e3$, $\dot{R} = R S(\omega)$, $J \dot{\omega} = -S(\omega) J \omega + n$ — the plant being controlled throughout both chapters.
+\item Hierarchical control step 1: $u_T = -(T/m) r3d$ ⇒ $T = m\|u_T\|$, $r3d = -u_T/\|u_T\|$ — decouples thrust magnitude/direction from the rotational subproblem.
+\item Position PD/PID law: $u_T = -kP e - kD \dot{e} [- kI Integral(e)] - g + \ddot{p} $ — the position-loop control law; integral term needed for zero steady-state error under constant wind.
+\item Damping ratio from gains: $\xi = kD/(2 \sqrt{kP})$ — lets you pick \texttt{(kP,kD)} for a target overshoot/settling-time spec.
+\item Phase-margin time-delay bound: $tau_c = PM/wc$ — max pure delay the loop tolerates before instability.
+\item Steady-state wind offset (PD only): $y (t) = r(t) + w0/kP$ — quantifies why integral action is needed.
+\item Attitude reference extraction: $[\cos(phi_d)\sin(theta_d), -\sin(phi_d), \cos(phi_d)\cos(theta_d)]^T = Rz(-\psi ) r3d$ — converts a desired thrust direction into desired roll/pitch given desired yaw.
+\item Controllability matrix: $C = [B, AB, ..., A^{n-1}B]$, full rank \texttt{n} ⟺ controllable — decides whether pole placement/LQR is achievable.
+\item Observability matrix: $O = [C; CA; ...; CA^{n-1}]$, full rank \texttt{n} ⟺ observable — decides whether a convergent observer exists.
+\item Pole placement theorem: $\det(\lambda I - A + BK) = p(\lambda)$ solvable for any monic \texttt{p} iff \texttt{(A,B)} controllable.
+\item Luenberger observer: $\dot{xhat} = A xhat + B u + L(y - C xhat)$; error dynamics $\dot{xtilde} = (A-LC) xtilde$.
+\item Duality: eigenvalues of \texttt{A-LC} = eigenvalues of $A^T - C^T L^T$ ⇒ observer design = transposed controller design ($A↔A^T, B↔C^T, K↔L^T$).
+\item Separation principle: eigenvalues of the combined state-feedback+observer system = eig(A-BK) ∪ eig(A-LC) — justifies designing \texttt{K} and \texttt{L} independently (LTI only).
+\item Algebraic Riccati equation: $A^T P + P A + Q - P B R^-1 B^T P = 0$, optimal gain $K = R^-1 B^T P$, minimizing $J = Integral(x^T Q x + u^T R u) dt$, min cost $= x^T(0) P x(0)$.
+\item Bryson's rule: $Q_ii = 1/(max acceptable x_i^2)$, $R_ii = 1/(max acceptable u_i^2)$ — practical starting point for LQR weight tuning.
+\item Kalman's equality: $|1+L(jw)|^2 = 1 + \|G P(jw)\|^2/\rho$ — links the LQR weighting choice directly to open-loop Bode magnitude/phase margin.
+\end{itemize}
+
+\section{Open questions / unclear points}
+
+\begin{itemize}
+\item Ch3 leaves an explicit \textbf{unsolved exercise}: redo the wind-disturbance-rejection analysis with the disturbance entering as a velocity input rather than an acceleration input.
+\item The exact numeric values of \texttt{kw} (\texttt{k\_\allowbreak{}omega}) and \texttt{kl} (\texttt{k\_\allowbreak{}lambda}) used in the Ch3 slide 43-44 inner-loop pole-placement example are referenced (\texttt{roots([1,kw,kl])}) but not stated explicitly on the slides read — only the resulting 5-element gain vector is given.
+\item Ch4's $damp(A-B K)$ MATLAB output and the observer gain \texttt{L} are shown as pre-computed results (presumably from a live MATLAB/Simulink demo); the underlying \texttt{.m}/\texttt{.slx} files are not included in this PDF, only screenshots of the console/Simulink model.
+\item The \texttt{estim(ss(A,B,C,0), L, 1, 1)} call's last two arguments (sensor/noise indices) are shown without explanation in the slide — standard MATLAB Control System Toolbox usage, but not elaborated in the lecture.
+\item Ch4 defers the "optimal" version of the observer (Kalman filter) with "more on this later" — that material is presumably covered in Ch5/Ch6 (Sensors and State Estimation), not in this file.
+\end{itemize}
+
+\end{document}

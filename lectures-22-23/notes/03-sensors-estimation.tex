@@ -1,0 +1,308 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{DejaVu Math TeX Gyre}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[C]{\footnotesize ARob -- UAVs / Aeronaves Robotizadas}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{26pt}
+\sloppy
+\emergencystretch=2em
+\title{Sensors and State Estimation}
+\author{Course notes -- Autumn 2022/23}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+Source files:
+\begin{itemize}
+\item \texttt{22\_\allowbreak{}23\_\allowbreak{}UAVs\_\allowbreak{}Ch5-6\_\allowbreak{}Sensors\_\allowbreak{}and\_\allowbreak{}State\_\allowbreak{}Estimation\_\allowbreak{}1.pdf} (28 pages) - course lecture, Técnico Lisboa, MEAer UAVs, Autumn 2022/2023, by Rita Cunha / J.R. Azinheira
+\item \texttt{22\_\allowbreak{}23\_\allowbreak{}UAVs\_\allowbreak{}Ch5\_\allowbreak{}Sensors\_\allowbreak{}Beard\_\allowbreak{}McLain.pdf} (29 pages) - reference chapter (Ch. 7 of the source textbook)
+\item \texttt{22\_\allowbreak{}23\_\allowbreak{}UAVs\_\allowbreak{}Ch6\_\allowbreak{}State\_\allowbreak{}Estimation\_\allowbreak{}Beard\_\allowbreak{}McLain.pdf} (47 pages) - reference chapter (Ch. 8 of the source textbook)
+\end{itemize}
+
+Both reference PDFs are slide adaptations of Randal Beard \& Timothy McLain, \textit{Small Unmanned Aircraft: Theory and Practice}, Princeton University Press, 2012 (Ch. 7 "Sensors" and Ch. 8 "State Estimation"). All pages processed (28/28, 29/29, 47/47).
+
+\section{Course lecture (Ch5-6 Sensors and State Estimation)}
+
+The lecture is built directly on top of the Beard \& McLain slide deck and adds annotations specific to the AR.Drone platform used in the course labs, plus a worked observability example and a treatment of complementary filters.
+
+\subsection{AR.Drone-specific sensors (course addition, not in the textbook)}
+\begin{itemize}
+\item The AR.Drone has \textbf{no GPS}. Its extra sensors compared to the generic textbook list are:
+\begin{itemize}
+\item \textbf{Sonar} (ultrasonic): 40 kHz resonance, range up to 6 m, sampled at 25 Hz. Used to estimate height/vertical displacement and depth of the scene seen by the vertical (downward-facing) camera.
+\item \textbf{Vision} (downward camera, hovering flight): speed estimation via two alternative algorithms:
+\begin{enumerate}
+\item Multi-resolution optical-flow scheme over the whole image.
+\item "Corner tracking" - track displacement of a set of interest points (trackers).
+\end{enumerate}
+\end{itemize}
+\end{itemize}
+
+\subsection{Accelerometers - basic principle (spring-mass-damper derivation)}
+Derived from a proof mass on a spring/damper inside a casing:
+\begin{itemize}
+\item \texttt{h}: inertial height of casing; $h1 = h + δ$: inertial height of proof mass; $δ$: relative displacement (what is actually measured).
+\item Newton's 2nd law on the proof mass: $m·\ddot{h}1 = -k(h1-h) - β(\dot{h}1-\dot{h}) - mg$.
+\item Substituting $z = -h$, this becomes the accelerometer 2nd-order dynamics: $m·\ddot{δ} + β·\dot{δ} + k·δ = m(\ddot{z} - g)$.
+\item Laplace/transfer function: $D(s) = 1/(s² + (β/m)s + k/m) · (Az(s) - g/s)$.
+\item Low-frequency approximation: $δ ≈ (m/k)(\ddot{z} - g)$ - i.e. below the sensor's natural frequency, deflection is proportional to (acceleration minus gravity).
+\item For a 3-axis accelerometer rigidly attached to the vehicle body frame \{B\}: $δ ∝ Rᵀ(\ddot{p} - g·e3) = S(ω)v + \dot{v} - g·Rᵀe3$ (S(ω) is the skew-symmetric matrix of the angular velocity - same notation as the rigid-body chapter).
+\item Near hover (small p̈, small ω): $δ ∝ -g·Rᵀe3 = -g·[-sinθ, cosθ·sinφ, cosθ·cosφ]ᵀ$.
+\item \textbf{Key takeaway}: accelerometers alone give roll/pitch information only near hover / unaccelerated flight - they are "typically used for attitude estimation in combination with other sensors" (fused with gyros/GPS).
+\end{itemize}
+
+\subsection{Rate gyros - basic principle (Coriolis / MEMS vibrating mass)}
+\begin{itemize}
+\item A vibrating proof mass with velocity \texttt{v} on a rotating body experiences a Coriolis acceleration \texttt{aC}. For a package rotating with $ω = [0,0,Ω]ᵀ$ and vibration velocity $v = [vx,0,0]ᵀ$, $\ddot{p}1 = -[0, 2Ω·vx, 0]ᵀ + Rᵀ\ddot{p}$ - the second term is proportional to the angular rate Ω being measured. (Detailed kinematic derivation: $p1 = Rᵀp$, $\dot{p}1 = -S(ω)Rᵀp + Rᵀ\dot{p}$, $\ddot{p}1 = -S(\dot{ω})Rᵀp + S(ω)²Rᵀp - 2S(ω)Rᵀ\dot{p} + Rᵀ\ddot{p}$.)
+\end{itemize}
+
+\subsection{Magnetometers - heading recovery}
+\begin{itemize}
+\item $Im0 = [cosδ·cosγ, sinδ·cosγ, sinγ]ᵀ$ is the known magnetic field vector in the inertial frame (δ = declination, γ = inclination, location-dependent).
+\item Body-frame reading: $Bm0 = BR_I · Im0$, and roll/pitch (φ,θ) are assumed known from other sensors.
+\item Compensating for roll and pitch: $B1m0 = Ry(θ)Rx(φ)·Bm0 = Rz(-ψ)·Im0$, which reduces to a 2D rotation by $(ψ-δ)$ in the horizontal plane.
+\item Closed form for heading: $(ψ - δ) = \operatorname{atan2}(-B1my, B1mx)$.
+\end{itemize}
+
+\subsection{Kalman filter (course treatment)}
+\begin{itemize}
+\item Continuous-time stochastic LTI model: $\dot{x} = Ax + Bu + w$, $y = Cy + n$ (should read $y = Cx + n$), with \texttt{w}, \texttt{n} zero-mean white noise, $E[w(t)w(τ)ᵀ] = δ(t-τ)W$, $E[n(t)n(τ)ᵀ] = δ(t-τ)N$.
+\item Objective: minimize $J = lim_{t→∞} E[\tilde{x}(t)ᵀ\tilde{x}(t)] = lim tr[Σ(t)]$, with error covariance $Σ(t) = E[\tilde{x}(t)\tilde{x}(t)ᵀ]$.
+\item Observer form: $\hat{x\dot{}} = A\hat{x} + Bu - L(y - C\hat{x})$, gain $L = Σ∞·Cᵀ·N⁻¹$, where $Σ∞$ solves the steady-state Riccati-like equation $(A-LC)Σ∞ + Σ∞(Aᵀ-CᵀLᵀ) + W + LNLᵀ = 0$.
+\item \textbf{Duality LQR ↔ Kalman filter} made explicit side by side:
+\begin{itemize}
+\item LQR: $\dot{x}=Ax+Bu$, $u=-Kx$, cost $J=∫(xᵀQx+uᵀRu)dt$, $Q=CᵀC≥0, R>0$, gain $K=R⁻¹BᵀP$, $PA+AᵀP+Q-PBR⁻¹BᵀP=0$. Requires \texttt{(A,B)} stabilizable, \texttt{(A,C)} detectable.
+\item KF: $\dot{x}=Ax+Bu+\bar{B}w$, $y=Cx+n$, gain $L=ΣCᵀN⁻¹$, $ΣAᵀ+AΣ+W-ΣCᵀN⁻¹CΣ=0$. Requires \texttt{(A,C)} detectable, $(A,\bar{B})$ controllable (marked "?" as an open point in slides, i.e. worth double-checking case by case).
+\end{itemize}
+\end{itemize}
+
+\subsection{Worked example: roll-angle estimation for a fixed-wing aircraft}
+Assumptions: coordinated turn, no wind, no sideslip. From force balance: $Flift·cosφ = mg$, $Flift·sinφ = mV²/R = mV·\dot{ψ}$, giving $tanφ = V\dot{ψ}/g$, i.e. $\dot{ψ} = (g/V)tanφ$.
+
+The course walks through \textbf{three progressively richer Kalman filter setups} for this example, illustrating the role of observability:
+
+\begin{enumerate}
+\item \textbf{Rate-gyro only, state = [φ, bp, br]}, output $y = rm$ (yaw-rate measurement only): model
+$\dot{φ} = pm - bp - np$, $\dot{b}p = n1$, $\dot{b}r = n2$, output $y = rm = (g/V)φ + br + nr$.
+→ \textbf{Not observable} (pair (A,C) fails the observability test) - additional sensor is needed. This is a nice didactic "what goes wrong" case.
+\item \textbf{Rate gyros + accelerometer, state = [φ, p, bp, br]}, outputs $y = [rm, pm, φm]ᵀ$ (adds roll-rate measurement \texttt{pm} and a (noisy) direct roll measurement $φm$ from the accelerometer, derived from $am ≈ -g[0, sinφ, cosφ]ᵀ$ under the coordinated-turn assumption, i.e. $am = -g[0,0,√(1+tan²φ)]$ after substitution).
+→ \textbf{Observable} - this is the version that actually works.
+\item A \textbf{second alternative} with the same state/output structure but using the dynamic model for the time evolution of $\dot{φ}$ directly (equivalent result, different parametrization).
+\end{enumerate}
+
+\subsection{Complementary filters}
+\begin{itemize}
+\item \textbf{Context}: different sensors are reliable over different (complementary) frequency bands - e.g. GPS velocity is accurate at low frequency but slow/noisy at high frequency, while integrated accelerometer data is accurate at high frequency but drifts (bias accumulates) at low frequency.
+\item \textbf{Structure}: $\hat{x} = GL(s)·xmL + GH(s)·xmH$, with $GL(s) = l/(s+l)$ (low-pass) and $GH(s) = s/(s+l)$ (high-pass), satisfying $GL(s) + GH(s) = 1$ for all s.
+\item \textbf{Worked example - altitude-rate estimation}: $\dot{h}GPS = \dot{h}(t) + n1(t)$ (low-frequency-good) and $\ddot{h}ACC$ integrated once to $\dot{h}ACC = \dot{h}(t) + n2(t)$ (high-frequency-good). Combined estimate:
+$\hat{H}(s) = l/(s+l)·\dot{H}1(s) + s/(s+l)·\dot{H}2(s) = \dot{H}(s) + l/(s+l)·N1(s) + s/(s+l)·N2(s)$
+→ keeps the whole true signal, attenuates N1 at high frequency and N2 at low frequency.
+\item \textbf{Connection to Kalman filter}: shown to be an exact special case. With $x = \dot{h}$, $u = \ddot{h}ACC$, $y = \dot{h}GPS$, the KF observer $\hat{x\dot{}} = A\hat{x}+Bu+L(y-C\hat{x})$ reduces to exactly the complementary filter structure - i.e. the complementary filter is a Kalman filter with fixed (non-adaptive) gain \texttt{l}.
+\item \textbf{More advanced case shown}: a state observer for \textbf{roll angle + roll-rate bias}, $x=[φ,bp]$, $u=pm$, $y=φm$, producing a second-order complementary filter $\hat{Φ}(s) = GL(s)Φm(s) + GH(s)Pm(s)/s$ with $GL(s) = (l1s+l2)/(s²+l1s+l2)$.
+\end{itemize}
+
+\section{Textbook reference - Sensors (Beard \& McLain Ch5, "Chapter 7" in the original book numbering)}
+
+Covers, in order: accelerometers, rate gyros, pressure sensors (absolute + differential), magnetometers/compasses, GPS.
+
+\subsection{Accelerometers (MEMS)}
+\begin{itemize}
+\item Physical model: proof mass \texttt{m} on spring \texttt{k}, $m\ddot{x} + kx = k(y-x)$ where \texttt{y} is casing displacement, \texttt{x} proof-mass deflection. Laplace: $X(s)/Y(s) = 1/((m/k)s²+1)$, equivalently in terms of acceleration $AX(s)/AY(s) = 1/((m/k)s²+1)$.
+\item Model with bias + noise: $Υaccel = kaccel·a + βaccel + η'accel$.
+\item \textbf{Key conceptual point (repeated, "tricky concept")}: an accelerometer measures \textbf{specific force}, i.e. $a = (1/m)(Ftotal - Fgravity)$, or equivalently $ameasured = (1/m)(ΣFnon-gravitational)$. \textbf{Accelerometers do not measure gravity} - a stationary accelerometer on a table reads +g upward (reaction force), not zero, because the proof mass and casing are NOT both free-falling together in that scenario (unlike free fall, where both experience gravity identically and the reading is zero).
+\item For a fixed-wing aircraft: $ameasured = (1/m)(Flift + Fdrag + Fthrust)$ (gravity cancels analytically).
+\item Full body-frame accelerometer equations (from Ch.3 rigid-body dynamics $m(dv/dt_b + ω_{b/i}×v) = Ftotal$):
+\begin{itemize}
+\item $ax = \dot{u} + qw - rv + g·sinθ$
+\item $ay = \dot{v} + ru - pw - g·cosθ·sinφ$
+\item $az = \dot{w} + pv - qu - g·cosθ·cosφ$
+With sensor noise added: $y_accel,i = (kinematic term) + η_accel,i$.
+\end{itemize}
+\item Also expressed in terms of aerodynamic coefficients (\texttt{CX, CY, CZ}, angle of attack $α$, sideslip $β$, control surfaces $δa, δe, δr$, motor throttle $δt$) - the full nonlinear aerodynamic force model, useful for high-fidelity simulation.
+\item Compact "specific force" form: $y_accel,x = fx/m + g·sinθ + η$, etc. (fx,fy,fz = non-gravitational body forces).
+\end{itemize}
+
+\subsection{MEMS rate gyro}
+\begin{itemize}
+\item Physical principle: a point translating on a rotating rigid body experiences Coriolis acceleration $aC = 2Ω×v$. A resonating proof mass with $|v| = A·ωn·\sin(ωn·t)$ yields a sensor output $Vgyro = kC|aC| = 2kC·Ω·|Aωn·\sin(ωnt)| → 2kC·A·ωn·Ω = KC·Ω$ (proportional to angular rate).
+\item Model: $Υgyro = kgyro·Ω + βgyro (bias, from manufacturing/drift) + η'gyro$ (zero-mean Gaussian noise). Calibrated: $y_gyro,x = p + βgyro,x + ηgyro,x$ (and similarly for q,r).
+\end{itemize}
+
+\subsection{Pressure sensors}
+\begin{itemize}
+\item Piezoresistive diaphragm: external pressure deflects a thin diaphragm, measured via a doped piezoresistor bridge.
+\item \textbf{Absolute pressure → altitude}: hydrostatics $P2-P1 = ρg(z2-z1)$. Using ground as reference: $P - Pground = -ρg·h_AGL$. Below 11 km, barometric formula with temperature lapse rate accounts for density-with-altitude: $P = P0·[T0/(T0+L0·h_ASL)]^(gM/RL0)$, with $L0 = -0.0065 K/m$. Simplified constant-density sensor model: $y_abs_pres = ρg·h_AGL + βabs + ηabs$. (Slides show that the constant-density approximation diverges badly from the ideal-gas-law barometric formula above ~2000 m, but is fine below ~500 m.)
+\item \textbf{Differential (dynamic) pressure → airspeed}: Bernoulli, $Pt = Ps + ρVa²/2$ ⇒ $ρVa²/2 = Pt - Ps$. Sensor model: $y_diff_pres = ρVa²/2 + βdiff + ηdiff$. Implemented via a pitot-static tube (measures total pressure Pt at the tube tip and static pressure Ps from side ports, feeding a differential-pressure diaphragm sensor).
+\end{itemize}
+
+\subsection{Magnetometers / digital compasses}
+\begin{itemize}
+\item Heading = declination + magnetic heading: $ψ = δ + ψm$.
+\item $m0v1 = Rbv1(φ,θ)·m0b = Rv2v1(θ)·Rbv2(φ)·m0b$, explicit rotation-matrix expansion given in slides using (cθ,sθ,cφ,sφ) shorthand.
+\item Closed form: $ψm = -\operatorname{atan2}(m0y^v1, m0x^v1)$.
+\item Magnetic \textbf{inclination} (dip angle): angle of the field vector below horizontal; positive = pointing into the Earth. Both declination and inclination vary geographically (world maps shown) - relevant for accurate heading estimation depending on operating location.
+\end{itemize}
+
+\subsection{GPS}
+\begin{itemize}
+\item Constellation: 24 satellites, altitude ~20,180 km; any point on Earth sees ≥4 at all times. 4 pseudorange measurements needed (3 position unknowns + 1 receiver clock-offset unknown) → 4 nonlinear equations in 4 unknowns (lat, lon, alt, clock offset).
+\item \textbf{Error sources}: ephemeris data, satellite clock drift, ionospheric delay, tropospheric delay, multipath, receiver measurement noise. Rule of thumb: 10 ns timing error → ~3 m pseudorange error.
+\item \textbf{UERE} (User Equivalent Range Error) combines bias + random components per source (table given: ephemeris 2.1/0.0, satellite clock 2.0/0.7, ionosphere 4.0/0.5, troposphere 0.5/0.5, multipath 1.0/1.0, receiver 0.5/0.2 → total UERE rms ≈ 5.3 m, filtered ≈ 5.1 m).
+\item \textbf{DOP} (Dilution of Precision): satellite geometry effect on position accuracy; close-together satellites → high DOP (bad), spread-out → low DOP (good). Nominal HDOP=1.3, VDOP=1.8.
+\item Total error: $E_n-e,rms = HDOP × UERE_rms$ (≈6.6 m), $E_h,rms = VDOP × UERE_rms$ (≈9.2 m).
+\item \textbf{Gauss-Markov error model} (Rankin) for GPS error time-evolution: $ν[n+1] = e^(-kGPS·Ts)·ν[n] + ηGPS[n]$, first-order correlated random walk. Parameters given per axis (North/East/Altitude): nominal bias/random 1-σ errors, $ηGPS$ std dev, correlation time $1/kGPS = 1100 s$, $Ts = 1.0 s$. Measurement model: $yGPS,n[n] = pn[n] + νn[n]$ (similarly for east, altitude with sign flip since altitude = -pd).
+\end{itemize}
+
+\section{Textbook reference - State Estimation (Beard \& McLain Ch6, "Chapter 8" in the original book numbering)}
+
+\subsection{Motivation and architecture}
+\begin{itemize}
+\item Standard UAV autopilot architecture chain: \textbf{Path planner → Path manager → Path following → Autopilot → Unmanned Vehicle}, all fed by a \textbf{State estimator} block that consumes on-board sensor data and outputs $\hat{x}(t)$ to every other block.
+\item Not all states are directly measured. Table of what's measured vs. estimated:
+\begin{itemize}
+\item \texttt{pn, pe}: measured (GPS) and smoothed.
+\item \texttt{pd} (altitude): measured (absolute pressure, GPS).
+\item \texttt{u, v, w} (body velocities): estimated with EKF.
+\item $φ, θ, ψ$ (attitude): estimated with EKF.
+\item \texttt{p, q, r} (angular rates): measured directly (rate gyro).
+\end{itemize}
+\end{itemize}
+
+\subsection{Sensor-model inversion (cheap "quasi-estimation" before resorting to filtering)}
+\begin{itemize}
+\item Angular rates: $\hat{p} = LPF(y_gyro,x)$ etc. (just low-pass filter the raw gyro, correcting scaling).
+\item Altitude: $\hat{h} = LPF(y_static_pres)/(ρg)$.
+\item Airspeed: $\hat{V}a = \sqrt((2/ρ)·LPF(y_diff_pres))$.
+\item Roll/pitch under \textbf{steady, level (unaccelerated) flight assumption} ($\dot{u}=\dot{v}=\dot{w}=p=q=r=0$): the accelerometer equations reduce to $LPF(y_accel,x)=g sinθ$, $LPF(y_accel,y)=-g cosθ sinφ$, $LPF(y_accel,z)=-g cosθ cosφ$, solved as:
+$\hat{φ}accel = atan⁻¹(LPF(y_accel,y)/LPF(y_accel,z))$, $\hat{θ}accel = sin⁻¹(LPF(y_accel,x)/g)$.
+Demonstrated in simulation to work reasonably for p,q,r,h,Va, but to fail badly for φ,θ during maneuvers (the steady-flight assumption breaks) - motivating the EKF.
+\item GPS-derived states ($pn,pe,χ,Vg$) can also be obtained by direct LPF inversion, but GPS update rate (~1 Hz) is too slow, leaving gaps to fill between updates → motivates GPS smoothing (below).
+\end{itemize}
+
+\subsection{Dynamic observer theory (build-up to Kalman filter)}
+\begin{itemize}
+\item LTI continuous observer: $\hat{x\dot{}} = A\hat{x}+Bu + L(y-C\hat{x})$ ("copy of the model" + "correction due to sensor reading"). Error dynamics $\tilde{x\dot{}}=(A-LC)\tilde{x}$ → error → 0 iff eig(A-LC) in the left half-plane.
+\item \textbf{Predictor-corrector} structure for sampled-data / nonlinear systems: predict between measurements ($\hat{x\dot{}}=A\hat{x}+Bu$ or $\hat{x\dot{}}=f(\hat{x},u)$), correct at a measurement ($\hat{x}⁺ = \hat{x}⁻ + L(y(tn)-C\hat{x}⁻)$ or $...-h(\hat{x}⁻)$).
+\end{itemize}
+
+\subsection{Kalman filter - full derivation (continuous-discrete form)}
+Model: $\dot{x} = Ax+Bu+ξ$, $y[n]=Cx[n]+η[n]$, $ξ~N(0,Q)$ process noise, $η~N(0,R)$ measurement noise. R usually comes from sensor calibration; \textbf{Q is the main tuning parameter}.
+
+\begin{itemize}
+\item \textbf{Prediction (between measurements)}: error $\tilde{x\dot{}} = A\tilde{x}+ξ$ ⇒ covariance ODE $\dot{P} = AP+PAᵀ+Q$ (derived by differentiating $E[\tilde{x}\tilde{x}ᵀ]$ and using $E[ξ(τ)ξᵀ(t)]=Qδ(t-τ)$, taking half the delta-function area since integration is up to \texttt{t}).
+\item \textbf{Correction (at a measurement)}: $\tilde{x}⁺ = (I-LC)\tilde{x}⁻ - Lη$, $P⁺ = (I-LC)P⁻(I-LC)ᵀ + LRLᵀ$ (Joseph form). Minimizing $tr(P⁺)$ over \texttt{L} (using trace-derivative identities $∂/∂A tr(BAD)=BᵀDᵀ$ and $∂/∂A tr(ABAᵀ)=2AB$) gives the \textbf{optimal Kalman gain}:
+$L  = P⁻Cᵀ(R + CP⁻Cᵀ)⁻¹$, and substituting back: $P⁺ = (I-L C)P⁻(I-L C)ᵀ + L RL ᵀ$.
+\item \textbf{Discretization for implementation} (Euler/2nd-order expansion): $Ad = e^(A·Ts) ≈ I + A·Ts + A²Ts²/2$, giving discrete-time covariance propagation $P_{k+1} = Ad·Pk·Adᵀ + Ts²·Q$ (this form is guaranteed to keep P positive-definite, unlike naive first-order Euler $Pk+1 = Pk + Ts(APk+PkAᵀ+Q)$ which can lose positive-definiteness numerically).
+\item \textbf{Full continuous-discrete KF summary} (for multiple sensors i, each processed sequentially if R is diagonal/uncorrelated):
+\begin{itemize}
+\item Prediction: $\hat{x\dot{}}=A\hat{x}+Bu$, $Ad=I+ATs+A²Ts²/2$, $P_{k+1}=AdPkAdᵀ+Ts²Q$.
+\item Correction at sensor i: $Li = P⁻Ciᵀ(Ri+CiP⁻Ciᵀ)⁻¹$, $\hat{x}⁺=\hat{x}⁻+Li(yi-Ci\hat{x}⁻)$, $P⁺=(I-LiCi)P⁻(I-LiCi)ᵀ+LiRiLiᵀ$.
+\end{itemize}
+\end{itemize}
+
+\subsection{Extended Kalman Filter (EKF)}
+\begin{itemize}
+\item For nonlinear system $\dot{x}=f(x,u)+ξ$, $yi[n]=hi(x[n],u[n])+ηi[n]$. Linearize about the current estimate: $A=∂f/∂x(\hat{x},u)$, $Ci=∂hi/∂x(\hat{x}⁻)$, then apply the same discretized KF recursion as above using these Jacobians in place of constant A, C.
+\item \textbf{Algorithm box (pseudocode, given verbatim in slides)} - "Continuous-Discrete Extended Kalman Filter":
+\begin{enumerate}
+\item Initialize $\hat{x}=0$.
+\item Pick output rate $Tout ≪$ sensor sample rates.
+\item At each \texttt{Tout}: run N prediction sub-steps with $Tp = Tout/N$ (this inner-loop sub-stepping improves numerical accuracy of the discretization).
+\item On receipt of a measurement from sensor i: compute \texttt{Ci}, \texttt{Li}, update \texttt{P} and $\hat{x}$ (correction step).
+\end{enumerate}
+\begin{itemize}
+\item Note: if R is diagonal (sensors uncorrelated), corrections can be applied one measurement at a time sequentially rather than as a batch.
+\end{itemize}
+\end{itemize}
+
+\subsection{Worked example: attitude (φ, θ) estimation via EKF}
+\begin{itemize}
+\item Nonlinear propagation model (from Euler-angle kinematics): $\dot{φ} = p + q·sinφ·tanθ + r·cosφ·tanθ + ξφ$, $\dot{θ} = q·cosφ - r·sinφ + ξθ$.
+\item Output = accelerometer, $y_accel = (\dot{u}+qw-rv+g sinθ, \dot{v}+ru-pw-g cosθ sinφ, \dot{w}+pv-qu-g cosθ cosφ)ᵀ + η_accel$.
+\item Problem: no direct measurement of $\dot{u},\dot{v},\dot{w},u,v,w$. Solution: assume $\dot{u}≈\dot{v}≈\dot{w}≈0$ and approximate $(u,v,w)ᵀ ≈ Va(cosα cosβ, sinβ, sinα cosβ)ᵀ ≈ Va(cosθ, 0, sinθ)ᵀ$ (small-sideslip, α≈θ approximation) — substituting collapses the output equation to a function of $(φ,θ)$ and the measured inputs \texttt{(p,q,r,Va)} only:
+$y_accel = (qVa sinθ + g sinθ, rVa cosθ - pVa sinθ - g cosθ sinφ, -qVa cosθ - g cosθ cosφ)ᵀ + η_accel$.
+\item State-space form: $x=(φ,θ)ᵀ$, $u=(p,q,r,Va)ᵀ$, $ξ=(ξφ,ξθ)ᵀ$, $η=(ηφ,ηθ)ᵀ$; noise on the gyro/pressure inputs $u_actual=u+ξu$ propagates through the input-noise Jacobian \texttt{G(x)}:
+$\dot{x}=f(x,u)+G(x)ξu+ξ$, $y=h(x,u)+η$, with $G(x) = [[1, sinφ·tanθ, cosφ·tanθ, 0],[0, cosφ, -sinφ, 0]]$, and combined process noise covariance $G·Qu·Gᵀ + Q$.
+\item Jacobians for the EKF: $A=∂f/∂x$ and $C=∂h/∂x$ given explicitly (2×2 and 3×2 matrices, trig-heavy - see slide 36 for exact entries if re-deriving).
+\item \textbf{Result}: EKF attitude tracking shown in simulation to be "not perfect, but significantly better" than the pure sensor-inversion approach (matches roll/pitch through maneuvers where the level-flight assumption previously broke down).
+\end{itemize}
+
+\subsection{GPS smoothing}
+\begin{itemize}
+\item Goal: fill in estimates between slow (~1 Hz) GPS updates, and estimate wind \texttt{(wn, we)}.
+\item Assuming level flight, position kinematics: $\dot{p}n = Vg·cosχ$, $\dot{p}e = Vg·sinχ$.
+\item Ground-speed dynamics derived from the wind triangle $Vg = |Va·(cosψ,sinψ) + (wn,we)|$, differentiated (assuming constant Va, wind) to: $\dot{V}g = [(Va cosψ+wn)(-Va \dot{ψ} sinψ) + (Va sinψ+we)(Va \dot{ψ} cosψ)] / Vg$.
+\item Course-angle dynamics (from a coordinated-turn assumption): $\dot{χ} = (g/Vg)·tanφ·\cos(χ-ψ)$.
+\item Wind assumed constant: $\dot{w}n=0$, $\dot{w}e=0$. Heading kinematics: $\dot{ψ} = q·sinφ/cosθ + r·cosφ/cosθ$.
+\item Full state $x=(pn,pe,Vg,χ,wn,we,ψ)ᵀ$, input $u=(Va,q,r,φ,θ)ᵀ$; \texttt{f(x,u)} and its Jacobian $∂f/∂x$ given explicitly in slides (sparse structure - wind and ψ evolve independently of position/speed states at first order).
+\item \textbf{Pseudo-measurements from the wind-triangle constraint}: since $(pn,pe,Vg,χ,wn,we,ψ)$ are not independent (related by the wind triangle), two synthetic zero-valued measurements are added to make the system observable:
+$y_windtri,n = Va cosψ + wn - Vg cosχ$ (≡0), $y_windtri,e = Va sinψ + we - Vg sinχ$ (≡0).
+\item Combined measurement vector $yGPS = (yGPS,n, yGPS,e, yGPS,Vg, yGPS,χ, ywind,n, ywind,e)$, with \texttt{h(x,u)} and its Jacobian given explicitly (slide 43) - a 6×7 matrix, mostly identity/trig blocks.
+\item \textbf{Result}: GPS-smoothed estimates of position, ground speed, course, wind, and heading track the true trajectory closely in simulation (small errors, a few meters / few m/s / few degrees).
+\end{itemize}
+
+\subsection{Measurement gating (outlier rejection)}
+\begin{itemize}
+\item Innovation sequence $vk = yk - C\hat{x}k⁻ = C\tilde{x}k⁻ + ηk$, with covariance $Sk = R + CPk⁻Cᵀ$.
+\item Test statistic $zk = (yk-h(xk))ᵀ·Sk⁻¹·(yk-h(xk))$ is \textbf{chi-squared distributed with m degrees of freedom} (m = measurement dimension). A measurement update is only accepted if \texttt{zk} falls below a chi-squared threshold at a chosen confidence level (e.g. code snippet shown uses $scipy.stats.chi2.isf(q=0.01, df=3)$ for a 3-dof accelerometer measurement) - this rejects statistical outliers before they corrupt the filter.
+\end{itemize}
+
+\subsection{Practical tuning advice (given verbatim, useful checklist)}
+\begin{enumerate}
+\item Implement the EKF in stages: attitude estimator first, then GPS smoother.
+\item Test/tune each component independently and thoroughly.
+\item First verify the filter tracks states correctly with \textbf{noise-free} simulated sensors (exposes coding bugs, shows the filter's best-case performance ceiling).
+\item Keep wind at zero until the base filter is confidently tuned.
+\item \texttt{R} is usually well known from sensor datasheets/calibration; \textbf{tune primarily via \texttt{Q}}.
+\item Tune state-by-state: excite one state at a time, keep others quiet, adjust the corresponding \texttt{Q} entry by trial and error.
+\item Avoid extreme/abrupt inputs while tuning (large steps) - the filter's dynamic response has physical limits; jerky truth trajectories are inherently hard to estimate.
+\item Re-check your equations - repeatedly.
+\end{enumerate}
+
+\section{Key equations reference}
+
+\begin{itemize}
+\item Accelerometer (spring-mass): $m·\ddot{δ} + β·\dot{δ} + k·δ = m(\ddot{z}-g)$; specific-force interpretation $a = (1/m)(Ftotal - Fgravity)$ - \textbf{accelerometers never read gravity directly}.
+\item Body-frame accelerometer output: $[ax,ay,az] = [\dot{u}+qw-rv+g sinθ, \dot{v}+ru-pw-g cosθ sinφ, \dot{w}+pv-qu-g cosθ cosφ]$.
+\item Rate gyro (Coriolis): $aC = 2Ω×v$; sensor output $∝ K·Ω$ plus bias+noise $y_gyro = p (or q,r) + β + η$.
+\item Barometric altitude: $y_abs_pres = ρg·h_AGL + β + η$; airspeed from Bernoulli: $y_diff_pres = ρVa²/2 + β + η$.
+\item Magnetometer heading: $ψ = δ + ψm$, $ψm = -\operatorname{atan2}(m0y^v1, m0x^v1)$ after compensating for roll/pitch.
+\item GPS: 4 satellites solve for (lat,lon,alt,clock offset); error ≈ $DOP × UERE$; error modeled as first-order Gauss-Markov process $ν[n+1]=e^{-kTs}ν[n]+η[n]$.
+\item LQR/Kalman duality: LQR gain $K=R⁻¹BᵀP$ solves $PA+AᵀP+Q-PBR⁻¹BᵀP=0$; Kalman gain $L=ΣCᵀN⁻¹$ solves $AΣ+ΣAᵀ+W-ΣCᵀN⁻¹CΣ=0$.
+\item Continuous-discrete Kalman filter: prediction $\hat{x\dot{}}=A\hat{x}+Bu$, $Ad=I+ATs+A²Ts²/2$, $P_{k+1}=AdPkAdᵀ+Ts²Q$; correction $Li=P⁻Ciᵀ(Ri+CiP⁻Ciᵀ)⁻¹$, $\hat{x}⁺=\hat{x}⁻+Li(yi-Ci\hat{x}⁻)$, $P⁺=(I-LiCi)P⁻(I-LiCi)ᵀ+LiRiLiᵀ$.
+\item EKF = same recursion with $A=∂f/∂x(\hat{x},u)$ and $Ci=∂hi/∂x(\hat{x}⁻)$ (local linearization at each step).
+\item Complementary filter: $\hat{x} = GL(s)·xmL + GH(s)·xmH$, $GL(s)=l/(s+l)$, $GH(s)=s/(s+l)$, $GL+GH=1$ - provably a special (fixed-gain) case of the Kalman filter.
+\item Measurement gating: reject a measurement if $(y-h(x))ᵀS⁻¹(y-h(x))$ exceeds a chi-squared threshold for the measurement's degrees of freedom.
+\item Observability matters concretely: a rate-gyro-only roll estimator (state $[φ,bp,br]$, output \texttt{rm} only) is \textbf{not observable}; adding an accelerometer-derived roll measurement and the roll rate \texttt{pm} makes it observable. Always check \texttt{(A,C)} before trusting an EKF/KF design.
+\end{itemize}
+
+\section{Open questions / unclear points}
+
+\begin{itemize}
+\item Course lecture slide 12 has a typo in the stochastic system definition: $y = Cy + n$ should read $y = Cx + n$ (confirmed by every other occurrence of the same model in the deck and in the textbook chapter, which consistently write $y=Cx+n$).
+\item The "(A, B̄) Controllable?" annotation in the LQR/KF duality slide (course lecture, slide 14) is left as an open question mark in the source material itself - the course does not give a definitive general answer for when the noise-input pair needs to be controllable versus merely stabilizable; treat as a nuance to raise with the instructor if it becomes relevant to an assignment.
+\item The two Beard \& McLain chapters are the \textit{generic fixed-wing MAV} treatment (states $pn,pe,pd,u,v,w,φ,θ,ψ,p,q,r$); the course's own AR.Drone lab platform has no GPS and adds sonar+vision instead, so the GPS-smoothing and airspeed/pitot material in Ch6/Ch8 does not directly transfer to the drone labs - it's provided as generic background for the wider "UAV" concept (likely also relevant to a fixed-wing part of the course not covered by these three files). See \texttt{lectures-22-23/notes/} for how this connects to the rigid-body/quadrotor modeling chapters, once those are summarized in sibling notes files.
+\item Slide "Sensors: AR.Drone" (course lecture) does not give a quantitative model for the vision-based velocity estimate (no equations, just qualitative algorithm names) - if quantitative modeling of optical flow is needed later, it isn't in this material and would need to come from the AR.Drone devkit docs or additional papers.
+\end{itemize}
+
+\end{document}

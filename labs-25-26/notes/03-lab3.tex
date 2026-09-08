@@ -1,0 +1,141 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{DejaVu Math TeX Gyre}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[C]{\footnotesize ARob -- UAVs / Aeronaves Robotizadas}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{26pt}
+\sloppy
+\emergencystretch=2em
+\title{Lab 3 - Motion Control of the Parrot AR.Drone (2025/26)}
+\author{Course notes -- 2025/26 labs}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+Source files:
+\begin{itemize}
+\item \texttt{25\_\allowbreak{}26\_\allowbreak{}UAVs\_\allowbreak{}Lab3.pdf} (5 pages) - lab handout, "Unmanned Aerial Vehicles, M.Sc. in Aerospace Engineering, 2025/2026 - First Semester, Motion Control of the Parrot AR.Drone, Laboratory Guide, November 2025", IST Lisboa.
+\item \texttt{DevKit\_\allowbreak{}Lab3/\allowbreak{}ARDroneSimulinkDevKit\_\allowbreak{}V1.1/guide.pdf} (3 pages) - generic devkit user guide.
+\item \texttt{DevKit\_\allowbreak{}Lab3/\allowbreak{}ARDroneSimulinkDevKit\_\allowbreak{}V1.1/start\_\allowbreak{}here\_\allowbreak{}CTRL.m}, \texttt{lib/\allowbreak{}euler2R.m}, \texttt{lib/\allowbreak{}getWaypoints.m}, \texttt{lib/\allowbreak{}setupARModel.m}, \texttt{simulation/\allowbreak{}setupBaseModel.m}, \texttt{simulation/\allowbreak{}setupHoverSim.m}, \texttt{simulation/\allowbreak{}setupTTSim.m}, \texttt{simulation/\allowbreak{}setupWPTrackingSim.m}, \texttt{wifiControl/\allowbreak{}setupHover.m}, \texttt{wifiControl/\allowbreak{}setupTT.m}, \texttt{wifiControl/\allowbreak{}setupWPTracking.m}.
+\item \texttt{.slx} Simulink models (binary, not parsed): \texttt{lib/ARBlocks.slx}, \texttt{simulation/\allowbreak{}ARDroneBaseSim.slx}, \texttt{simulation/\allowbreak{}ARDroneHoverSim.slx}, \texttt{simulation/\allowbreak{}ARDroneTTSim.slx}, \texttt{simulation/\allowbreak{}ARDroneWPTrackingSim.slx}, \texttt{wifiControl/\allowbreak{}ARDroneHover.slx}, \texttt{wifiControl/\allowbreak{}ARDroneTT.slx}, \texttt{wifiControl/\allowbreak{}ARDroneWPTracking.slx}.
+\end{itemize}
+
+\section{Lab handout - objectives and tasks}
+
+\textbf{Objectives} (Sec 1.1): (1) design a trajectory-tracking controller for a generic quadrotor; (2) add an adaptation law to reject an unknown (constant) disturbance; (3) implement a modified version of that controller on the AR.Drone DevKit; (4) implement a simple trajectory planner generating straight-line and circular reference trajectories.
+
+\textbf{Logistics} (Sec 1.2): questions are tagged (T) theoretical (solve before the lab session) or (L) laboratory (complete during sessions, using the provided MATLAB/Simulink package). Deliverable: a single-column PDF report, \textbf{max 15 pages}, plus the MATLAB code, submitted via Fenix; must use the official cover page (\texttt{25\_\allowbreak{}26\_\allowbreak{}UAVs\_\allowbreak{}Lab\_\allowbreak{}report\_\allowbreak{}cover\_\allowbreak{}page.docx}, in this same \texttt{labs-25-26/} folder). Sec 1.3 is a standard academic-integrity clause (report must be original work).
+
+\subsection{Section 2 - Trajectory Tracking Control (all theoretical, T)}
+
+This section is a \textbf{complete, self-contained re-derivation} of the LQR-based trajectory-tracking controller from the lectures, extended with an adaptive disturbance-rejection term. It reuses the exact quadrotor linear-motion equation from the course:
+
+\begin{itemize}
+\item \textbf{2.1}: Start from $\ddot p = ge_3 - R(T/m)e_3$ with $R = R_z(\psi)R_y(\theta)R_x(\phi)$ (identical convention to \href{../../lectures-22-23/notes/01-foundations.pdf}{\texttt{../../lectures-22-23/notes/01-\allowbreak{}foundations.pdf}}). Change of variables to $\ddot p = ge_3 - R_z(\psi)u^*$ (rotate the virtual input into the yaw-aligned frame), then invert to get $T$, $\theta_r$, $\phi_r$ as functions of $u^*$. This is the same "extract thrust magnitude + attitude reference from a desired acceleration" trick as the differential-flatness result in Ch2, but expressed slightly differently: here only the yaw rotation $R_z(\psi)$ is factored out (since it's directly measured/controlled), leaving $u^*$ to be produced by an \textit{inner} attitude loop assumed to already track $(\phi_r, \theta_r)$ on a fast timescale - i.e. the same two-timescale (5-10x bandwidth separation) cascade assumption as \href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}} (Ch3).
+\item \textbf{2.2-2.3}: Standard LQR design on the double-integrator error system $\tilde x=[\tilde p;\tilde v]$, $\dot{\tilde x}=A\tilde x+Bu$. Students must derive $K=(1/\rho)B'P$ from the Riccati equation $A'P+PA-(1/\rho)PBB'P+Q=0$ and prove closed-loop stability via $V_1=\tilde x'P\tilde x$, $\dot V_1=-\tilde x'Q^*\tilde x$ - this is a direct, numbered application of the \textbf{LQR theorem} from \texttt{02-\allowbreak{}control.pdf} (Ch4), just with cost weight $\rho$ on the control instead of a general $R$.
+\item \textbf{2.4-2.6}: Extends the model to $\ddot p = ge_3 - R_z(\psi)u^* + w$ with unknown constant disturbance $w$ (e.g. wind), and an adaptive law $u^* = R_z(-\psi)(K\tilde x+ge_3+\hat w-\ddot p_d)$. Students must propose an adaptation law for $\dot{\hat w}$ using the augmented Lyapunov function $V_2=V_1+(1/k_w)\|\tilde w\|^2$ and prove \textbf{global asymptotic stability} of the augmented state $\xi=[\tilde x;\tilde w]$. This is a textbook instance of the \textbf{adaptive-control pattern} from \href{../../lectures-22-23/notes/04-guidance-nonlinear.pdf}{\texttt{../../lectures-22-23/notes/04-\allowbreak{}guidance-\allowbreak{}nonlinear.pdf}} (Ch7 Part II, "Lyapunov analysis and adaptive control": $V_2=V(x)+(1/k_\theta)\tilde\theta^2$, adaptation law $\dot{\hat\theta}=k_\theta(\partial V/\partial x)g(x,u)$) - here the unknown parameter is a vector disturbance rather than a scalar model parameter, but the construction is identical: augment $V$, cancel the cross term, get $\dot V_2\leq 0$ (not $<0$, since LaSalle is needed - matching the note in Ch7 that adaptive parameter estimates are generally only bounded, not exactly convergent, unless "persistently exciting").
+\item \textbf{2.7}: Asks students to redraw the closed loop as the block diagram in Fig. 1 ($p_d \to [+/-] \to \bar K(s) \to [+\, \ddot p_d+w] \to 1/s^2 \to p$) and discuss the connection to a \textbf{PID controller} - directly parallel to the Ch3 discussion (\texttt{02-\allowbreak{}control.pdf}) of how adding an integrator/adaptive state to a PD position loop produces PID-like disturbance rejection, and to the Ch7 backstepping result that backstepping "reproduces a PD-like tracking law but derived constructively."
+\item \textbf{2.8}: A short, separate exercise: design a feedback law for the (decoupled) yaw first-order dynamics to track a constant reference with \textbf{zero steady-state error} - i.e. requires integral action (internal model principle), same idea as the wind-rejection PID discussion in Ch3.
+\end{itemize}
+
+\subsection{Section 3 - Implementation and simulation using the AR.Drone DevKit (all laboratory, L)}
+
+\begin{itemize}
+\item An \textbf{updated DevKit} is provided for this lab (see Devkit section below): new \texttt{start\_\allowbreak{}here\_\allowbreak{}CTRL.m} entry point, new option \textbf{(4) Trajectory Tracking}, opening \texttt{ARDroneTTSim.slx} (simulation) or \texttt{ARDroneTT.slx} (Wi-Fi control). Two new Simulink blocks, \texttt{desired\_\allowbreak{}trajectory} and \texttt{tt\_\allowbreak{}controller} (the latter inside \texttt{Outer-loop Controller}), have their I/O interfaces defined but their \textbf{content is intentionally left (partially) empty} - implementing them (as MATLAB Function blocks) is the actual lab exercise. Neither \texttt{.m} script nor the \texttt{.slx} files contain numeric controller gains; all gains ($K$, $k_w$, $k_w$ for the vertical proportional term, LOS parameters $\Delta$,$V$) are left for the students to design and tune.
+\item \textbf{3.1}: The real DevKit inner loop only accepts $(\phi_r, \theta_r, w_r, \dot\psi_r)$ (roll/pitch angle references, vertical-velocity reference, yaw-rate reference) rather than a raw torque $n$ - so the theoretical controller of Sec. 2 must be adapted: keep the $(\phi_r,\theta_r)$ and yaw-rate expressions, but replace the vertical channel with a simple proportional law $w_r = -k_w(z-z_d)$ (justified because trajectories are assumed horizontal-plane with small roll/pitch).
+\item \textbf{3.2-3.3}: Implement \texttt{desired\_\allowbreak{}trajectory} for a \textbf{horizontal straight-line} path at constant height, speed 0.1 m/s, constant yaw, starting from the drone's actual position when tracking is enabled (avoids a large initial position-error transient/actuation spike). Must also supply $\dot p_d$, $\ddot p_d$ (used by the LQR/adaptive law). Then test and tune gains.
+\item \textbf{3.4-3.6}: Switch to a \textbf{circular trajectory} (radius 1 m, angular rate 0.1 rad/s, constant yaw); then experiment with making yaw always point toward the circle's center, and discuss whether that alone achieves zero tracking error (it generally won't, since the position-tracking error dynamics don't depend on yaw - consistent with 2.8's remark that "yaw is not constrained by the linear dynamics"), motivating further controller changes if not.
+\item \textbf{3.7}: Replace the "reset desired position to current position" trick with a \textbf{line-of-sight (LOS) straight-line path-following} scheme: $\psi_d = \operatorname{atan}(-(y-y_d)/\Delta)$, $\dot x_d = V\cos(\psi_d)$, $\dot y_d = V\sin(\psi_d)$. This is the \textbf{same LOS guidance concept} flagged (but not derived) as an alternative to the vector-field path-following law in \texttt{04-\allowbreak{}guidance-\allowbreak{}nonlinear.pdf} (Ch8) - here it appears as a fully worked, lab-specific instance, with $\Delta$ (lookahead-like distance) and $V$ (nominal speed) as the tunable parameters whose effect on path convergence students must discuss - directly analogous to how $k_{path}\approx 1/R_{min}$ tunes the vector-field law's transition sharpness in Ch8.
+\end{itemize}
+
+\section{Devkit guide - CTRL/TT-specific usage}
+
+\textbf{The \texttt{guide.pdf} shipped with \texttt{DevKit\_\allowbreak{}Lab3} is byte-identical to the one shipped with \texttt{DevKit\_\allowbreak{}Lab1}} (confirmed via \texttt{md5sum}: both \texttt{83c7109e5b163664c8b2eeafe100f558}). It is the original, unmodified "ARDrone Simulink Development Kit" guide by D. Escobar Sanabria \& P. J. Mosterman (University of Minnesota / MathWorks, v1.0, Sept. 2013), and it documents only the original three examples: Waypoint Tracking, Hovering/Position Control, and Baseline Simulation. \textbf{It does not mention \texttt{start\_\allowbreak{}here\_\allowbreak{}CTRL.m}, the Trajectory Tracking option, \texttt{ARDroneTTSim.slx}/\texttt{ARDroneTT.slx}, or the \texttt{desired\_\allowbreak{}trajectory}/\texttt{tt\_\allowbreak{}controller} blocks at all} - the Lab3 handout's own Section 3 is the only documentation for these additions; the generic \texttt{guide.pdf} was not updated for this lab. Practical implication: any student (or future session) looking for usage instructions for the trajectory-tracking mode must rely on the lab handout, not the devkit guide, and on reading \texttt{start\_\allowbreak{}here\_\allowbreak{}CTRL.m} directly.
+
+The guide's generic content that \textit{does} still apply to Lab3: requirements (MATLAB/Simulink R2013b 32/64-bit, Real-Time Windows Target R2013b via \texttt{rtwintgt -\allowbreak{}setup}, Parrot AR.Drone 2.0), the \texttt{ARBlocks.slx} library description (\texttt{ARDrone Simulation Block} = system-identified vehicle-dynamics model; \texttt{ARDrone Wi-Fi Block} = Real-Time-Windows-Target-based Wi-Fi interface, same I/O as the simulation block for easy sim-to-real transfer), the vehicle/frame diagram (body frame $X_b$ along the heading direction; inertial frame $X_e$,$Y_e$), and the video-streaming \texttt{ffmpeg}/\texttt{ffplay} commands (\texttt{http://192.168.1.1:5555}, unrelated to control but part of the same devkit).
+
+\section{Devkit scripts - control-specific additions vs Lab1's devkit}
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|p{3.0cm}|p{4.0cm}|p{7.2cm}|}
+\hline
+Script & What it configures & Notable content \\
+\hline
+\endhead
+\texttt{start\_\allowbreak{}here\_\allowbreak{}CTRL.m} & Entry point (replaces Lab1's plain \texttt{start\_\allowbreak{}here.m}) & Adds \textbf{option (4) Trajectory Tracking} under both Simulation and Wi-Fi-control menus, dispatching to \texttt{setupTTSim}/\texttt{setupTT}. Otherwise structurally identical to Lab1's menu (options 1-3 unchanged: baseline sim, hover, waypoint tracking). No numeric gains. \\
+\hline
+\texttt{lib/\allowbreak{}euler2R.m} & Euler angles → rotation matrix (\textbf{new in Lab3's devkit} - absent from Lab1/Lab2) & See "Connections to lecture material" below - implements $R = R_z(\psi)R_y(\theta)R_x(\phi)$. \\
+\hline
+\texttt{lib/\allowbreak{}getWaypoints.m} & Waypoint list $(X_e, Y_e, h, \psi_d, \text{waiting time})$ for the WP-tracking example & Unchanged from Lab1: 11 waypoints hardcoded (mostly hover at $(0,0,1)$ with one excursion to $(\pm 1.5,0,1)$ and one to height 1.8 m). Not used by the TT example (its setup script comments out the \texttt{getWaypoints()} call). \\
+\hline
+\texttt{lib/\allowbreak{}setupARModel.m} & Loads linear state-space/transfer-function models (\texttt{ssRoll}, \texttt{ssRoll2V}, \texttt{ssPitch}, \texttt{ssPitch2U}, \texttt{ssYaw}, \texttt{ssH}) from \texttt{.mat} files & Identical across Lab1/2/3 - this is the \textbf{system-identified inner-loop plant model} (roll/pitch/yaw/height dynamics) that the lecture's Ch3/Ch4 controllers are designed against; the actual numeric state-space matrices are inside the \texttt{.mat} files, not inspected here (binary). \\
+\hline
+\texttt{simulation/\allowbreak{}setupBaseModel.m}, \texttt{setupHoverSim.m}, \texttt{setupWPTrackingSim.m} & Baseline/hover/waypoint simulation setups & Unchanged in structure from Lab1 (same \texttt{FMS.Ts} = 0.065 s baseline/WP, 0.03 s hover; \texttt{timeDelay = 4*Ts}; \texttt{simDT = 0.005}). No control gains present in the \texttt{.m} files - any gains live inside the \texttt{.slx} model blocks (not text-readable). \\
+\hline
+\texttt{simulation/\allowbreak{}setupTTSim.m} (\textbf{new}) & Trajectory-tracking simulation setup & Same skeleton as the others (\texttt{FMS.Ts=0.03}, \texttt{timeDelay=4*Ts}, \texttt{simDT=0.005}), loads \texttt{ARDroneTTSim.slx}. Notably \textbf{comments out} the \texttt{getWaypoints()} call (trajectory tracking doesn't use the waypoint list - it uses the \texttt{desired\_\allowbreak{}trajectory} block instead). \\
+\hline
+\texttt{wifiControl/\allowbreak{}setupHover.m}, \texttt{setupWPTracking.m} & Wi-Fi hover / waypoint-tracking setup & Unchanged from Lab1 (\texttt{sampleTime=0.03} hover, \texttt{0.065} WP-tracking); both carry the same "position estimate is inaccurate - obtained by integrating an inaccurate velocity estimate from onboard optical flow" warning, directly relevant to why Lab2's estimation work matters for Lab3's control performance. \\
+\hline
+\texttt{wifiControl/\allowbreak{}setupTT.m} (\textbf{new}) & Wi-Fi trajectory-tracking setup & Minimal (\texttt{sampleTime=0.03}, loads \texttt{ARDroneTT}), same structure as \texttt{setupHover.m}/\texttt{setupWPTracking.m} but without the waypoint list (uses \texttt{desired\_\allowbreak{}trajectory} block instead). \\
+\hline
+\end{longtable}
+\end{center}
+
+No PID/LQR/adaptation numeric gains appear anywhere in the \texttt{.m} files - by design, the controller (\texttt{tt\_\allowbreak{}controller}) and trajectory generator (\texttt{desired\_\allowbreak{}trajectory}) are \textbf{MATLAB Function blocks left empty inside the \texttt{.slx} files}, to be filled in by the student per the handout's Sec. 3 instructions. This matches the handout's explicit statement: "the content is partially empty. To implement and simulate the trajectory tracking controller, both blocks need to be filled in the form of Matlab Functions."
+
+\section{Simulink models present}
+
+\begin{itemize}
+\item \texttt{lib/ARBlocks.slx} - shared library (ARDrone Simulation Block, ARDrone Wi-Fi Block), same across all three labs.
+\item \texttt{simulation/\allowbreak{}ARDroneBaseSim.slx}, \texttt{ARDroneHoverSim.slx}, \texttt{ARDroneWPTrackingSim.slx} - unchanged baseline/hover/waypoint-tracking simulation models (present identically in Lab1's devkit).
+\item \texttt{simulation/\allowbreak{}ARDroneTTSim.slx} (\textbf{new, Lab3-only}) - trajectory-tracking simulation model; contains the \texttt{desired\_\allowbreak{}trajectory} block and the \texttt{Outer-loop Controller} subsystem (with \texttt{tt\_\allowbreak{}controller} inside), both partially empty per the handout.
+\item \texttt{wifiControl/\allowbreak{}ARDroneHover.slx}, \texttt{ARDroneWPTracking.slx} - unchanged Wi-Fi-control hover/waypoint models.
+\item \texttt{wifiControl/\allowbreak{}ARDroneTT.slx} (\textbf{new, Lab3-only}) - Wi-Fi-control counterpart of \texttt{ARDroneTTSim.slx}, real-time deployable version.
+\end{itemize}
+
+(Contents not parsed - \texttt{.slx} files are Simulink's zipped-XML binary model format; the handout's text description above is the only available account of what's inside \texttt{desired\_\allowbreak{}trajectory} and \texttt{tt\_\allowbreak{}controller}.)
+
+\section{Connections to lecture material}
+
+\begin{itemize}
+\item \textbf{\texttt{euler2R.m} matches the course's Euler-angle convention exactly.} Expanding $\lambda=[\phi,\theta,\psi]$, the script computes $R = R_z(\psi)R_y(\theta)R_x(\phi)$ (row/column-by-column verified: e.g. $R(1,1)=\cos(\theta)\cos(\psi)$, $R(3,1)=-\sin(\theta)$, $R(3,2)=\sin(\phi)\cos(\theta)$, $R(3,3)=\cos(\phi)\cos(\theta)$) - this is precisely the ZYX Euler rotation matrix documented in \href{../../lectures-22-23/notes/01-foundations.pdf}{\texttt{../../lectures-22-23/notes/01-\allowbreak{}foundations.pdf}} (Ch1): ${}^I_BR = R_z(\psi)R_y(\theta)R_x(\phi)$. No sign or ordering discrepancy - a lab report can cite the lecture notes' rotation-matrix formula directly when explaining/using this function.
+\item \textbf{Section 2's LQR trajectory-tracking design is a direct, numbered walk-through of the LQR theorem} in \href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}} (Ch4: $K=R^{-1}B^TP$, $A^TP+PA+Q-PBR^{-1}B^TP=0$, minimum cost $x'(0)Px(0)$) - here specialized to $R\to\rho$ (scalar cost weight) and the position-error double-integrator $(A,B)$ pair.
+\item \textbf{Section 2.4-2.6's adaptive disturbance-rejection law is a direct application of the adaptive-control pattern} in \href{../../lectures-22-23/notes/04-guidance-nonlinear.pdf}{\texttt{../../lectures-22-23/notes/04-\allowbreak{}guidance-\allowbreak{}nonlinear.pdf}} (Ch7 Part II) - augmented Lyapunov function, gradient-type adaptation law, LaSalle-based GAS proof of the augmented $(\tilde x,\tilde w)$ system. Worth noting in a report: the lecture's generic scalar-parameter case ($\dot x=\theta x+u$) generalizes cleanly here to a vector disturbance because the structure $\ddot p = ge_3-R_z(\psi)u^*+w$ is affine in the unknown $w$, exactly like the lecture's $g(x,u)\theta$ term.
+\item \textbf{The cascade/two-timescale assumption} ("an inner-loop controller drives $(\phi,\theta)$ to $(\phi_r,\theta_r)$... time-scale separation... sufficiently large to neglect the coupling") is verbatim the same hierarchical-control justification as \texttt{02-\allowbreak{}control.pdf} (Ch3: "make the inner loop 5-10x faster... so they can be tuned quasi-independently").
+\item \textbf{The LOS guidance law in 3.7} is the same family of "lookahead-distance" guidance mentioned but not derived in \texttt{04-\allowbreak{}guidance-\allowbreak{}nonlinear.pdf} (Ch8, "Lookahead-distance alternatives: Line-of-sight (LOS) guidance and the L1 guidance law") - Lab3 provides the missing worked formula and turns it into a hands-on exercise.
+\item \textbf{Section 2.8's yaw-tracking-with-zero-steady-state-error} exercise is a miniature version of the integral-action argument in Ch3 (\texttt{02-\allowbreak{}control.pdf}: PD alone leaves a steady-state offset under a constant disturbance/reference; integral action removes it) - here applied to a general first-order (not pure-integrator) yaw model, so students must also handle the case of a stable non-integrator pole, not just the double-integrator case worked in the lecture.
+\item \textbf{The \texttt{wifiControl/*.m} warning about inaccurate position estimates from integrated, optical-flow-derived velocity} is exactly the AR.Drone-specific sensing limitation documented in \texttt{03-\allowbreak{}sensors-\allowbreak{}estimation.pdf} (no GPS; velocity from vision/optical flow, height from sonar) - a concrete reason why the trajectory-tracking controller designed in Sec. 2 (which assumes clean $p$, $\dot p$ feedback) may perform worse in the real Wi-Fi-control experiment than in simulation, and worth flagging explicitly in a lab report's discussion of results.
+\end{itemize}
+
+\section{Open questions / unclear points}
+
+\begin{itemize}
+\item The handout never gives numeric values for the design parameters students must choose ($Q$, $\rho$ for the LQR-based $K$, $k_w$ for the adaptation law, the vertical proportional gain $k_w$ in $w_r=-k_w(z-z_d)$ - note this reuses the symbol $k_w$ for two different gains across Sec. 2.5 and Sec. 3.1, a naming collision worth flagging in a report), nor the LOS parameters $\Delta$, $V$ - these are left entirely to student design/tuning, consistent with the lecture's Bryson's-rule "trial and error" tuning philosophy (Ch4) but meaning no "reference" numeric answer exists in the source material.
+\item The exact content of the \texttt{desired\_\allowbreak{}trajectory} and \texttt{tt\_\allowbreak{}controller} MATLAB Function blocks inside \texttt{ARDroneTTSim.slx}/\texttt{ARDroneTT.slx} could not be inspected (binary Simulink format) - only the handout's prose description of their required I/O and behavior is available.
+\item The handout states the model's real inputs are $(\phi_r, \theta_r, w_r, \dot\psi_r)$ but doesn't show the exact Simulink signal names/units used inside the block (e.g. whether angles are in radians or the AR.Drone's native normalized command range) - would need to open the \texttt{.slx} in Simulink to confirm.
+\item \texttt{lib/\allowbreak{}setupARModel.m} loads six \texttt{.mat} files (\texttt{ssRoll}, \texttt{ssRoll2V}, \texttt{ssPitch}, \texttt{ssPitch2U}, \texttt{ssYaw}, \texttt{ssH}) containing the actual identified inner-loop transfer functions/state-space matrices; their numeric content wasn't inspected (binary \texttt{.mat}, outside this fork's scope) - if a report needs the literal inner-loop plant model, these files (present in \texttt{lib/} of all three DevKit folders) would need to be loaded in MATLAB.
+\end{itemize}
+
+\end{document}

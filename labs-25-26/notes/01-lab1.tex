@@ -1,0 +1,168 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{DejaVu Math TeX Gyre}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[C]{\footnotesize ARob -- UAVs / Aeronaves Robotizadas}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{26pt}
+\sloppy
+\emergencystretch=2em
+\title{Lab 1 - Modelling and Identification}
+\author{Course notes -- 2025/26 labs}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+Source files:
+\begin{itemize}
+\item \texttt{25\_\allowbreak{}26\_\allowbreak{}AR\_\allowbreak{}Lab1.pdf} (7 pages) - "Laboratory Guide 1: Modeling and Identification of the Parrot AR.Drone", UAVs, MEAer, IST Lisboa, 2025/26 First Semester, September 2025.
+\item \texttt{DevKit\_\allowbreak{}Lab1/\allowbreak{}ARDroneSimulinkDevKit\_\allowbreak{}V1.1/guide.pdf} (3 pages) - "ARDrone Simulink Development Kit", v1.0, Sep 2013, by David Escobar Sanabria (U. Minnesota) and Pieter J. Mosterman (MathWorks).
+\item All \texttt{.m} scripts under \texttt{DevKit\_\allowbreak{}Lab1/\allowbreak{}ARDroneSimulinkDevKit\_\allowbreak{}V1.1/} (\texttt{start\_\allowbreak{}here.m}, \texttt{lib/\allowbreak{}getWaypoints.m}, \texttt{lib/\allowbreak{}setupARModel.m}, \texttt{simulation/\allowbreak{}setupBaseModel.m}, \texttt{simulation/\allowbreak{}setupHoverSim.m}, \texttt{simulation/\allowbreak{}setupWPTrackingSim.m}, \texttt{wifiControl/\allowbreak{}setupHover.m}, \texttt{wifiControl/\allowbreak{}setupWPTracking.m}).
+\item \texttt{25\_\allowbreak{}26\_\allowbreak{}UAVs\_\allowbreak{}Lab\_\allowbreak{}report\_\allowbreak{}cover\_\allowbreak{}page.docx} (shared template for all 3 labs).
+\end{itemize}
+
+\section{Lab handout - objectives and tasks}
+
+\textbf{Objectives} (handout §1.1): (1) kinematic/dynamic modelling of a quadrotor, (2) linearization about hover, (3) analysis of inner/outer control loops for height and vertical speed, (4) identification of the height closed-loop system, (5) identification of the pitch-angle closed-loop system.
+
+\textbf{Logistics} (§1.2): questions are marked (T) theoretical (solve outside lab) or (L) lab (needs experimental data). Deliverable per group: a zip with (a) a single-column PDF report, \textbf{max 15 pages}, and (b) the \texttt{.m} script files, uploaded via Fenix. Must use the official cover page as front page (see below). §1.3 is a standard academic-integrity clause (work must be original).
+
+\textbf{§2 Modelling (all (T) questions)} - this section restates the rigid-body model from lectures Ch1/Ch2 with lab-specific notation (uses $\{I\}$=NED frame explicitly, position $p=[x,y,z]$, velocity $v=[u,v,w]$ in body frame, Euler angles $\lambda=[\phi,\theta,\psi]$ with $\theta\in\,]-\pi/2,\pi/2[$, angular velocity $\omega=[p,q,r]$) and the same kinematics/dynamics equations as \href{../../lectures-22-23/notes/01-foundations.pdf}{\texttt{../../lectures-22-23/notes/01-\allowbreak{}foundations.pdf}}:
+$\dot p=R(\lambda)v$, $\dot\lambda=Q(\lambda)\omega$, $m\dot v=-mS(\omega)v+f$, $J\dot\omega=-S(\omega)J\omega+n$.
+
+The AR.Drone-specific part: 4 rotors with individual thrusts $f_i$ and torques $n_i=c\cdot f_i$ (c = a scalar drag/thrust proportionality constant, same role as $c_Q/c_T$ in the lecture notes), two counter-rotating pairs. Exercises walk through:
+\begin{itemize}
+\item \textbf{2.1}: derive $f = M\cdot f_g + N\cdot f_T$ and $n = P\cdot f_T$, i.e. decompose total force/torque into gravity contribution ($M$) and rotor-thrust contribution ($N$, $P$) - this is the lab's version of the lecture's mixer-matrix derivation (\href{../../lectures-22-23/notes/01-foundations.pdf}{\texttt{../../lectures-22-23/notes/01-\allowbreak{}foundations.pdf}} §Ch2 actuation chain), but phrased with an explicit gravity term folded in rather than added afterward.
+\item \textbf{2.2}: redo the mixer derivation for a \textbf{45°-rotated body frame} ($x_B$ axis midway between rotor arms) - directly the "× configuration" exercise that the lecture slides (Ch2 p.13) left open and unsolved; this lab handout supplies the concrete version of that exercise.
+\item \textbf{2.3}: define control input $u=[T; n]$ via $L\cdot f_T = u$, discuss usefulness of the linear transform, and derive the inverse $f_T = L^{-1}u$ - i.e. rotor-thrust allocation from desired thrust/torque, needed to actually command the AR.Drone.
+\item \textbf{2.4}: derive full 12-state nonlinear dynamics in two alternative state parametrizations, $x=[{}^Bp,v,\lambda,\omega]$ (position expressed in \textbf{body} frame, ${}^Bp=R^Tp$) and $x_1=[p,\dot p,\lambda,\omega]$ (position and its inertial-frame derivative) - $g(x,u)$ and $g_1(x_1,u)$.
+\item \textbf{2.5}: find the hover equilibrium $(x_0,u_0)$ at arbitrary position $p_0$ and yaw $\psi_0$ - expect $T_0=mg$, $\phi_0=\theta_0=0$, all velocities/rates zero (matches the lecture's hover special case of differential flatness).
+\item \textbf{2.6-2.7}: linearize around hover to get $\dot{\tilde x}=A\tilde x+B\tilde u$ (12×12 $A$, 12×4 $B$), then derive the six transfer functions $G_\phi(s)=\Phi/N_x$, $G_\theta(s)=\Theta/N_y$, $G_\psi(s)=\Psi/N_z$, $G_x(s)=X/N_y$, $G_y(s)=Y/N_x$, $G_z(s)=Z/T$ (assuming diagonal $J$) - this is the lab's concrete instantiation of the small-angle linearization sketched in \href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}} (Ch3, $\ddot p\approx[-g\theta, g\phi, 0]$).
+\item \textbf{2.8}: relate $G_\phi\leftrightarrow G_y$ and $G_\theta\leftrightarrow G_x$ (physical meaning: pitch drives x-motion, roll drives y-motion - the classic cross-coupling noted in the Ch3 lecture notes) and discuss the effect of different yaw equilibria $\psi_0$.
+\item \textbf{2.9-2.10}: two equivalent height-control block diagrams (Fig. 2: nested inner-rate/outer-position PD structure with an explicit $1/(ms)$ mass-integrator and derivative feedback $k_d$; Fig. 3: a single PD compensator $k_p+k_ds$ in series) - asked to compare them and sketch a root-locus in $k_p$ for fixed $k_d>0$. These map directly onto the Ch3 lecture material on root-locus/loop-shaping for the position/height loop.
+\end{itemize}
+
+\textbf{§3 Identification of closed-loop height dynamics} - (L) questions:
+\begin{itemize}
+\item \textbf{3.1} (simulation): modify \texttt{ARDroneHoverSim.slx} (save as \texttt{ARDroneHoverSimHeight.slx}) to get step responses for 4 proportional-gain values $k_p\in\{0.5,1.0,2.0,3.0\}$ with correspondingly \textit{decreasing} step sizes $\{1.0,0.8,0.3,0.2\}\,$m (rationale to discuss: larger gain → more aggressive response → smaller step needed to stay within safe/linear operating range or avoid saturation/overshoot into the ceiling or floor).
+\item \textbf{3.2} (experiment): repeat physically on the real drone via Wi-Fi (\texttt{ARDroneHover.slx} → save as \texttt{ARDroneHoverHeight.slx}), following a strict safety procedure: Fly switch = land, Commands = disabled, take off, stabilize at 0.75 m reference, enable commands, wait $\geq 2$ s, then apply the cumulative step.
+\item \textbf{3.3}: use MATLAB's System Identification Toolbox to fit a closed-loop transfer function (matching the Fig. 2 structure) to the experimental step data.
+\item \textbf{3.4}: plot pole/zero maps per gain value, compare against the theoretical root-locus (Q2.10), discuss theory-vs-simulation-vs-experiment mismatches. Explicit \textbf{suggestion given in the handout}: model communication delay via a \textbf{Padé approximation} in the root-locus - a concrete, gradeable technique not covered explicitly in the lecture slides (which discuss delay only via phase-margin bounds, $\tau_c=PM/\omega_c$, in \href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}}).
+\end{itemize}
+
+\textbf{§4 Identification of closed-loop pitch dynamics} - (L) questions:
+\begin{itemize}
+\item \textbf{4.1}: obtain an experimental Bode amplitude diagram for pitch by injecting sinusoidal references, $\omega\in[1,20]\,$rad/s, amplitude 0.2 at low frequencies (amplitude presumably reduced at higher frequencies to avoid actuator saturation, though the handout doesn't spell out the schedule beyond "maximum amplitude 0.2 for the lower frequencies").
+\item \textbf{4.2}: fit a \textbf{2nd-order LTI model with a minimum-phase zero} to the measured amplitude response using MATLAB's \texttt{nlinfit}.
+\item \textbf{4.3}: apply a pulse-like pitch reference ($0\to 0.2$ rad at $t=15$s, back to 0 at $t=18$s) and cross-check the response against both the step (parts 3) and frequency-response (part 4.1-4.2) characterizations for consistency.
+\end{itemize}
+
+\section{Devkit guide - setup and usage}
+
+The devkit (\texttt{ARDrone Simulink Development Kit} v1.0, 2013, U. Minnesota/MathWorks) requires \textbf{MATLAB/Simulink R2013b} and \textbf{Real-Time Windows Target} (\texttt{rtwintgt -\allowbreak{}setup}), targeting a \textbf{Parrot AR.Drone 2.0} with the protective indoor hull.
+
+Two core library blocks in \texttt{lib/ARBlocks.slx}:
+\begin{itemize}
+\item \textbf{ARDrone Simulation Block}: a vehicle-dynamics model obtained via system identification (i.e. this \textit{is} the identified closed-loop/open-loop model referenced throughout the lab handout) - used to validate algorithms before real flight.
+\item \textbf{ARDrone Wi-Fi Block}: real interface to the physical drone (send commands / read states), built on Real-Time Windows Target for periodic execution, used for actual experiments.
+\end{itemize}
+Both blocks share the same I/O interface, so a controller built against the simulation block transfers directly to the Wi-Fi block.
+
+Three worked examples, each with a simulation and a Wi-Fi-control variant:
+\begin{enumerate}
+\item \textbf{Waypoint tracking} - tracks a list of $(X_e, Y_e, \text{height}, \text{heading}, \text{waiting-time})$ waypoints (edited in \texttt{lib/\allowbreak{}getWaypoints.m}). Wi-Fi workflow: connect to drone's Wi-Fi network → edit waypoints → run \texttt{wifiControl/\allowbreak{}setupWPTracking.m} → build the Simulink model (Ctrl+B) → verify \texttt{fly}/\texttt{enable reference commands}/\texttt{emergency stop} inputs are 0 → connect to target and run → toggle \texttt{fly}=1 to take off, then \texttt{enable reference commands}=1 to start the controller (heading zeroed at that moment).
+\item \textbf{Hovering / position control} - simplified case with constant position/heading references; setup via \texttt{setupHoverSim.m} (sim) / \texttt{setupHover.m} (Wi-Fi), models \texttt{ARDroneHoverSim.slx} / \texttt{ARDroneHover.slx}.
+\item \textbf{Baseline simulation} (\texttt{ARDroneBaseSim.slx}) - open-loop response to manual roll/pitch/yaw-rate/vertical-velocity commands; outputs body-frame velocities, orientation, height, battery level, drone state; three manual switches for take off/land/enable-commands/emergency-motor-cutoff.
+\end{enumerate}
+
+\textbf{Video streaming}: front camera accessible via \texttt{ffmpeg}/\texttt{ffplay} at \texttt{http://192.168.1.1:5555} (raw h264 stream) - e.g. \texttt{ffplay -f h264 -i http://192.168.1.1:5555} to view live, or \texttt{ffmpeg ... -f image2 -vf fps=10 out\%d.png} to dump frames. (192.168.1.1 is the AR.Drone's own Wi-Fi-AP default gateway address - confirms the drone hosts its own Wi-Fi network that the host computer joins directly, no router involved.)
+
+\section{Devkit scripts - parameters and model wiring}
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|p{2.9cm}|p{4.7cm}|p{6.6cm}|}
+\hline
+Script & Role & Notable details \\
+\hline
+\endhead
+\texttt{start\_\allowbreak{}here.m} & Interactive menu entry point. Clears workspace, prompts "(1) Simulation / (2) Wi-Fi control", then a sub-menu (Baseline / Hover / Waypoint tracking), \texttt{cd}s into the right folder and runs the matching setup script, then \texttt{cd ..} back. & Wi-Fi branch has commented-out \texttt{rtwbuild(...)} calls - actual real-time build is done manually (Ctrl+B in Simulink) per the guide's instructions, not automatically by this script. \\
+\hline
+\texttt{lib/\allowbreak{}getWaypoints.m} & Returns an 11-column matrix of $[X_e; Y_e; h; \text{heading}; \text{waitTime}]$ waypoints (despite the header comment describing only 4 fields - a minor doc/code mismatch, see Open Questions). & Default demo path: hover at origin (1 m) → shuttle to $(-1.5,0)$ and $(1.5,0)$ → back to origin → bump height to 1.8 m → settle back at 1 m, with 5 s waits at each "parked" point. Meant to be hand-edited by students per experiment. \\
+\hline
+\texttt{lib/\allowbreak{}setupARModel.m} & Loads 6 pre-identified linear state-space models from \texttt{.mat} files: \texttt{ssRoll}, \texttt{ssRoll2V}, \texttt{ssPitch}, \texttt{ssPitch2U}, \texttt{ssYaw}, \texttt{ssH} (height). & These are exactly the "system identification" models the guide refers to as backing the ARDrone Simulation Block - i.e. \textbf{already-identified} roll/pitch/yaw/height dynamics ship with the kit; Lab 1's Q3/Q4 asks students to \textit{re}-identify the height and pitch closed-loop dynamics themselves and presumably compare against these bundled models. \\
+\hline
+\texttt{simulation/\allowbreak{}setupBaseModel.m} & Sets \texttt{FMS.Ts = 0.065} s (control-law sample time), \texttt{timeDelay = 4·Ts = 0.26} s (communication delay), \texttt{simDT = 0.005} s (numerical integration step), loads \texttt{setupARModel}, \texttt{getWaypoints}, opens \texttt{ARDroneBaseSim}. & The $4\cdot Ts$ delay figure is a concrete number for the Padé-approximation suggestion in handout Q3.4. \\
+\hline
+\texttt{simulation/\allowbreak{}setupHoverSim.m} & Same pattern but \texttt{FMS.Ts = 0.03} s (commented-out alternative \texttt{0.065}), opens \texttt{ARDroneHoverSim}. & Faster nominal sample time for the hover/position-control case than the baseline/waypoint case. \\
+\hline
+\texttt{simulation/\allowbreak{}setupWPTrackingSim.m} & \texttt{FMS.Ts = 0.065} s, \texttt{timeDelay = 4·Ts}, opens \texttt{ARDroneWPTrackingSim}. & Same timing as baseline. \\
+\hline
+\texttt{wifiControl/\allowbreak{}setupHover.m} & \texttt{sampleTime = 0.03} s (commented \texttt{0.065}), adds \texttt{../lib} to path, opens \texttt{ARDroneHover}. Carries an explicit \textbf{warning comment}: position estimate is inaccurate because it integrates a noisy onboard velocity estimate (itself from optical flow), so drift should be expected. & This is the course's own hint that the AR.Drone's dead-reckoned position is unreliable - directly relevant to why Lab 2 (estimation) exists and to the sensors notes' point that the AR.Drone has no GPS. \\
+\hline
+\texttt{wifiControl/\allowbreak{}setupWPTracking.m} & \texttt{sampleTime = 0.065} s ("In demo mode, the ARDrone sends data via UDP every 0.065 s" - confirms UDP as the telemetry transport), loads waypoints, opens \texttt{ARDroneWPTracking}. Same position-accuracy warning as above. & Confirms UDP, not TCP, for the Wi-Fi telemetry/command link. \\
+\hline
+\end{longtable}
+\end{center}
+
+\section{Simulink models present}
+
+All under \texttt{DevKit\_\allowbreak{}Lab1/\allowbreak{}ARDroneSimulinkDevKit\_\allowbreak{}V1.1/}:
+\begin{itemize}
+\item \texttt{lib/ARBlocks.slx} - shared library (ARDrone Simulation Block + ARDrone Wi-Fi Block), imported by every other model.
+\item \texttt{simulation/\allowbreak{}ARDroneBaseSim.slx} - open-loop baseline simulation (manual roll/pitch/yaw-rate/vertical-speed inputs).
+\item \texttt{simulation/\allowbreak{}ARDroneHoverSim.slx} - closed-loop hover/position-control simulation; \textbf{this is the model Lab 1 §3.1 asks students to copy and modify} for the height step-response identification.
+\item \texttt{simulation/\allowbreak{}ARDroneWPTrackingSim.slx} - closed-loop waypoint-tracking simulation.
+\item \texttt{wifiControl/\allowbreak{}ARDroneHover.slx} - real-drone hover/position control over Wi-Fi; \textbf{copied/modified for Lab 1 §3.2/§4} (height and pitch identification experiments).
+\item \texttt{wifiControl/\allowbreak{}ARDroneWPTracking.slx} - real-drone waypoint tracking over Wi-Fi.
+\end{itemize}
+
+Note: the lab handout instructs saving modified copies under new names (e.g. \texttt{ARDroneHoverSimHeight.slx}, \texttt{ARDroneHoverHeight.slx}, \texttt{ARDroneHoverPitch.slx}) - none of these derived files exist yet in this devkit copy; they are expected to be created by the students during the lab.
+
+\section{Report cover page template}
+
+\texttt{25\_\allowbreak{}26\_\allowbreak{}UAVs\_\allowbreak{}Lab\_\allowbreak{}report\_\allowbreak{}cover\_\allowbreak{}page.docx} (extracted text): "Instituto Superior Técnico / MEAer / Unmanned Aerial Vehicles / 2025/2026 -- First Semester / \textbf{Laboratory ?}" then a "\textbf{Group ?}" block with 3 rows of \texttt{N.º: ? \ Name: ? \ Signature:} (student number, name, signature - one row per group member) and a final \texttt{Instructor: ?} field. Applies identically to Labs 1, 2, and 3 - only the "Laboratory ?" number changes per submission.
+
+\section{Connections to lecture material}
+
+\begin{itemize}
+\item The rigid-body kinematics/dynamics equations in handout §2 are a direct restatement of \href{../../lectures-22-23/notes/01-foundations.pdf}{\texttt{../../lectures-22-23/notes/01-\allowbreak{}foundations.pdf}} (Ch1), down to matching notation ($S(\cdot)$, $Q(\lambda)$, Z-Y-X Euler angles).
+\item The $f=Mf_g+Nf_T$, $n=Pf_T$ decomposition (Q2.1) and the $u=Lf_T$ allocation (Q2.3) are the lab's concrete version of the Ch2 mixer-matrix derivation; Q2.2's 45°-rotated-frame case is literally the "× configuration" exercise the Ch2 lecture slides left unsolved (see \href{../../lectures-22-23/COURSE_NOTES.pdf}{\texttt{../../lectures-22-23/COURSE\_\allowbreak{}NOTES.pdf}} gotchas list) - \textbf{this lab handout is where that exercise actually gets worked out}.
+\item The hover-equilibrium and linearization exercises (Q2.5-Q2.8) instantiate the small-angle linearization from \href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}} (Ch3) with explicit transfer functions per axis.
+\item The two height-control block diagrams (Q2.9, Figs. 2-3) and the root-locus/gain-tuning discussion (Q2.10, §3) are a direct hands-on application of the Ch3 root-locus/loop-shaping toolkit (\href{../../lectures-22-23/notes/02-control.pdf}{\texttt{../../lectures-22-23/notes/02-\allowbreak{}control.pdf}}), now closing the loop with \textbf{real experimental identification} rather than a purely theoretical design.
+\item The Padé-approximation suggestion for modelling the communication delay (Q3.4) extends the Ch3 lecture's delay-margin treatment ($\tau_c = PM/\omega_c$) into an explicit root-locus construction - a technique not spelled out in the lecture notes themselves.
+\item Frequency-response identification (§4, Bode fitting via \texttt{nlinfit}) parallels the Bode/loop-shaping analysis tools from Ch3, but used here for \textit{system identification} (fitting an unknown plant) rather than \textit{controller design} (shaping a known loop).
+\item This lab is explicitly "L1 = Modelling and identification" in the course's own lab-to-chapter mapping (see \href{../../lectures-22-23/COURSE_NOTES.pdf}{\texttt{../../lectures-22-23/COURSE\_\allowbreak{}NOTES.pdf}}, "Course ↔ lab mapping"), i.e. it's graded at weight 0.2 in the lab average $L = 0.2\cdot L1 + 0.4\cdot L2 + 0.4\cdot L3$.
+\end{itemize}
+
+\section{Open questions / unclear points}
+
+\begin{itemize}
+\item \texttt{lib/\allowbreak{}getWaypoints.m}'s header comment describes a 4-field waypoint (\text{position, heading, waiting time}) but the actual code builds a 5-row matrix ($X_e, Y_e, h, \text{heading}, \text{waitTime}$ - position split into 2 rows) - minor documentation/code mismatch in the vendor-supplied devkit, not something introduced by this course.
+\item The devkit guide and scripts are from 2013 (MATLAB R2013b, Real-Time Windows Target) while the lab is dated September 2025 - worth confirming with the instructor/TA whether a newer MATLAB/Simulink Real-Time toolchain is actually used in the 2025/26 labs, since R2013b is very outdated and Real-Time Windows Target was deprecated/renamed (now "Simulink Real-Time") in later MATLAB releases.
+\item The exact numeric content of the pre-identified \texttt{.mat} state-space models (\texttt{ssRoll}, \texttt{ssPitch}, \texttt{ssH}, etc.) loaded by \texttt{setupARModel.m} was not inspected (binary \texttt{.mat} files) - these likely contain the "ground truth" identified models students are meant to compare their own Lab 1 identification results against, but their actual coefficients are unknown from this analysis.
+\item The handout's Q4.1 sinusoidal test amplitude schedule ("maximum amplitude 0.2 for the lower frequencies") is not fully specified for higher frequencies in $\omega\in[1,20]$ rad/s - presumably reduced to avoid actuator saturation at higher frequencies, but the exact schedule is left to the student/TA to determine experimentally.
+\item The \texttt{.slx} files themselves are binary (zipped XML) and were not parsed in detail - block-level control-law structure (e.g. exact PD gains wired into \texttt{ARDroneHoverSim.slx}) is inferred only from the guide text and handout, not verified against the actual block diagrams.
+\end{itemize}
+
+\end{document}

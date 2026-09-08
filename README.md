@@ -12,7 +12,7 @@ The main bibliographic reference is Beard & McLain, *Small Unmanned Aircraft: Th
 
 ## Contents of this repository
 
-- `lectures-22-23/` - lecture slides from the 2022/23 edition (chapters 0 to 9), with `COURSE_NOTES.md` serving as a deep knowledge base for the whole theory.
+- `lectures-22-23/` - lecture slides from the 2022/23 edition (chapters 0 to 9), with `COURSE_NOTES.pdf` serving as a deep knowledge base for the whole theory.
 - `labs-25-26/` - handouts and Simulink devkits for the three labs of the 2025/26 edition, with `LAB_NOTES.md` documenting the practical component.
 - `reference-book/` - the main textbook itself (Beard & McLain, *Small Unmanned Aircraft: Theory and Practice*) plus its companion project code, in MATLAB, Simulink, and Python.
 

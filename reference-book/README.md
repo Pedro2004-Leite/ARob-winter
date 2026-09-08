@@ -30,7 +30,7 @@ What carries over directly is the underlying theory: rigid-body dynamics, sensor
 ## How this maps to the course's own chapters
 
 This course's chapter numbers (0-9) do **not** match the book's chapter numbers.
-Per [`../lectures-22-23/COURSE_NOTES.md`](../lectures-22-23/COURSE_NOTES.md), the confirmed mapping is:
+Per [`../lectures-22-23/COURSE_NOTES.pdf`](../lectures-22-23/COURSE_NOTES.pdf), the confirmed mapping is:
 
 | Course chapter | Book chapter | Topic | Code folder to look at |
 |---|---|---|---|

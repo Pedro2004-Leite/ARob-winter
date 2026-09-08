@@ -1,0 +1,135 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+\setmathfont{DejaVu Math TeX Gyre}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[C]{\footnotesize ARob -- UAVs / Aeronaves Robotizadas}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{26pt}
+\sloppy
+\emergencystretch=2em
+\title{UAVs / Aeronaves Robotizadas - Course Knowledge Base (2022/23)}
+\author{Course notes -- Autumn 2022/23}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\vspace{1em}
+
+This file is the entry point into a deep technical analysis of every lecture PDF in this folder.
+Detailed, equation-by-equation notes for each group of chapters live in \texttt{notes/} (linked below).
+This file gives the course overview, the chapter map, and how the pieces fit together.
+
+\section{Course identity}
+
+\begin{itemize}
+\item \textbf{Course}: Unmanned Aerial Vehicles / Aeronaves Robotizadas (ARob), MEAer, Instituto Superior Técnico, Lisboa.
+\item \textbf{Edition}: Autumn Semester 2022/2023.
+\item \textbf{Faculty}: José Raul Azinheira (jraz@dem.ist.utl.pt, responsible), Rita Cunha (rita@isr.tecnico.ulisboa.pt).
+\item \textbf{Structure}: 2h/week lectures + 1h30/week lab (12h total), 3 lab assignments (L1 modelling/identification, L2 motion-variable estimation, L3 motion control), 1 report per lab.
+\item \textbf{Grading}: $E = \max(E1, E2)$ (exam, 40\%), $L = 0.2 L1 + 0.4 L2 + 0.4 L3$ (labs, 60\%), $F = 0.4 E + 0.6 L$.
+\item \textbf{Main textbook}: Beard \& McLain, \textit{Small Unmanned Aircraft: Theory and Practice}, Princeton University Press, 2012 - directly reused (sometimes verbatim) for Ch5, Ch6, Ch8, Ch9.
+\item \textbf{Other references}: Astrom \& Murray, \textit{Feedback Systems}; Mahony/Kumar/Corke, "Multirotor Aerial Vehicles" (IEEE RAM 2012); Khalil, \textit{Nonlinear Systems}; Slotine \& Li, \textit{Applied Nonlinear Control}; Lee/Leok/McClamroch, "Geometric tracking control of a quadrotor UAV on SE(3)" (CDC 2010); Cabecinhas/Cunha/Silvestre (2014, by the course's own instructor Rita Cunha).
+\end{itemize}
+
+\textbf{Important numbering gotcha}: the course's own chapter numbers (0-9) do \textbf{not} match Beard \& McLain's book chapter numbers. Course Ch5→book Ch7, course Ch6→book Ch8, course Ch8→book Ch10, course Ch9→book Ch11. \texttt{ar23-ch10.pdf} is \textit{not} a 10th technical chapter - it's an 11-page course wrap-up/conclusion talk that recaps the syllabus and lab exercises.
+
+\section{Chapter map and detailed notes}
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|p{1.32cm}|p{6.05cm}|p{4.16cm}|p{3.66cm}|}
+\hline
+\# & Topic & Source PDFs & Detailed notes \\
+\hline
+\endhead
+Ch0 & Course intro, UAV motivation, vehicle-type tradeoffs, generic control-loop architecture & \texttt{Ch0\_\allowbreak{}Intro\_\allowbreak{}Part\_\allowbreak{}I/II} & \href{notes/01-foundations.pdf}{\texttt{notes/01-foundations.md}} \\
+\hline
+Ch1 & Rigid-body kinematics \& dynamics (rotations, Newton-Euler) & \texttt{Ch1\_\allowbreak{}Rigid\_\allowbreak{}Body} & \href{notes/01-foundations.pdf}{\texttt{notes/01-foundations.md}} \\
+\hline
+Ch2 & Quadrotor dynamic modelling, actuation, differential flatness, SWaP design & \texttt{Ch2\_\allowbreak{}Quadrotor\_\allowbreak{}Modeling} & \href{notes/01-foundations.pdf}{\texttt{notes/01-foundations.md}} \\
+\hline
+Ch3 & Quadrotor control intro: cascade position/attitude control, root-locus/Bode loop-shaping, integral action & \texttt{Ch3\_\allowbreak{}Quadrotor\_\allowbreak{}Control\_\allowbreak{}Intro} & \href{notes/02-control.pdf}{\texttt{notes/02-control.md}} \\
+\hline
+Ch4 & Modern control design: controllability/observability, pole placement, Luenberger observers, LQR & \texttt{Ch4\_\allowbreak{}Modern\_\allowbreak{}Control\_\allowbreak{}Design} & \href{notes/02-control.pdf}{\texttt{notes/02-control.md}} \\
+\hline
+Ch5 & Sensors (accelerometer, gyro, magnetometer, barometer, GPS) + AR.Drone specifics (sonar, vision) & \texttt{Ch5-6\_\allowbreak{}Sensors\_\allowbreak{}and\_\allowbreak{}State\_\allowbreak{}Estimation\_\allowbreak{}1}, \texttt{Ch5\_\allowbreak{}Sensors\_\allowbreak{}Beard\_\allowbreak{}McLain} & \href{notes/03-sensors-estimation.pdf}{\texttt{notes/03-sensors-estimation.md}} \\
+\hline
+Ch6 & State estimation: Kalman filter, EKF, complementary filters, GPS smoothing, measurement gating & \texttt{Ch5-6\_\allowbreak{}Sensors\_\allowbreak{}and\_\allowbreak{}State\_\allowbreak{}Estimation\_\allowbreak{}1}, \texttt{Ch6\_\allowbreak{}State\_\allowbreak{}Estimation\_\allowbreak{}Beard\_\allowbreak{}McLain} & \href{notes/03-sensors-estimation.pdf}{\texttt{notes/03-sensors-estimation.md}} \\
+\hline
+Ch7 & Nonlinear control: Lyapunov theory, LaSalle, backstepping, adaptive control, geometric SO(3) attitude control & \texttt{Ch7\_\allowbreak{}Intro\_\allowbreak{}Nonlinear\_\allowbreak{}Control}, \texttt{...\_\allowbreak{}Part\_\allowbreak{}II} & \href{notes/04-guidance-nonlinear.pdf}{\texttt{notes/04-guidance-nonlinear.md}} \\
+\hline
+Ch8 & Path following: straight-line and orbit guidance laws (= book Ch.10) & \texttt{Ch8\_\allowbreak{}Path\_\allowbreak{}Following} & \href{notes/04-guidance-nonlinear.pdf}{\texttt{notes/04-guidance-nonlinear.md}} \\
+\hline
+Ch9 & Path manager: waypoint switching, fillets, Dubins paths (= book Ch.11) & \texttt{Ch9\_\allowbreak{}PathManager} & \href{notes/04-guidance-nonlinear.pdf}{\texttt{notes/04-guidance-nonlinear.md}} \\
+\hline
+(wrap-up) & Course conclusion talk, confirms syllabus/chapter numbering & \texttt{ar23-ch10} & \href{notes/04-guidance-nonlinear.pdf}{\texttt{notes/04-guidance-nonlinear.md}} \\
+\hline
+\end{longtable}
+\end{center}
+
+\section{The big picture: how it all fits together}
+
+The course is organized around one recurring control-loop diagram (introduced in Ch0):
+
+\scriptsize
+\begin{verbatim}
+Mission objective -> Planning -> r -> (+/-) -> e -> Controller -> Model Dynamics (drone +
+                                  ^                                                      
+                                  |______________________ State Estimator <--------------
+\end{verbatim}
+\begin{verbatim}
+ disturbances) -> x -> Sensors (+ noise) -> y
+               |
+----------------|
+\end{verbatim}
+\normalsize
+
+Every later chapter fills in one block of this diagram:
+
+\begin{enumerate}
+\item \textbf{Model Dynamics} (Ch1-Ch2): derive the general rigid-body equations of motion, then specialize them to the quadrotor. Result is the base plant used everywhere downstream:
+$\dot{p} = Rv$, $\dot{R} = RS(ω)$, $m\dot{v} = -S(ω)mv + f$, $J\dot{ω} = -S(ω)Jω + n$, with quadrotor-specific $f = -Te₃ + mgRᵀe₃$ and mixer matrix mapping 4 rotor thrusts to \texttt{(T, n)}. The quadrotor is \textbf{underactuated} (12 states, 4 inputs) but \textbf{differentially flat} in $(p, ψ)$ - this flatness property is exactly what makes the cascade control design in Ch3/Ch7 possible (a desired thrust direction can always be recovered algebraically from a desired acceleration).
+\item \textbf{Controller} (Ch3, Ch4, Ch7): three increasingly rigorous ways to design the same cascade (outer position loop → inner attitude loop) controller:
+\begin{itemize}
+\item Ch3: classical SISO PD/PID + root-locus/Bode loop-shaping, treating the two loops as independent because the inner loop is designed 5-10x faster.
+\item Ch4: the state-space/"modern" reformulation of the same problem - pole placement and LQR replace hand-tuned PID, and the same architecture (state feedback + observer) is shown to collapse the hierarchical structure into one full-state feedback law when desired.
+\item Ch7: the nonlinear/Lyapunov-rigorous version of the \textit{same} cascade - backstepping reproduces the Ch3 PD law but with a stability proof that doesn't require linearization, and geometric SO(3) control handles the attitude loop in a way that respects the topology of rotations (revealing the fundamental result that \textit{global} attitude stabilization is impossible with continuous feedback).
+\end{itemize}
+\item \textbf{Sensors + State Estimator} (Ch5-Ch6): the accelerometer/gyro/magnetometer/GPS models feed a Kalman filter / EKF, whose gain-design math ($L = ΣCᵀN⁻¹$, Riccati equation) is the exact \textbf{dual} of the LQR gain design from Ch4 ($K = R⁻¹BᵀP$) - the course makes this LQR↔KF duality explicit. The complementary filter used in the AR.Drone labs is shown to be a fixed-gain special case of the Kalman filter.
+\item \textbf{Planning / Guidance} (Ch8-Ch9): sits \textit{above} the control loop, generating the reference \texttt{r(t)} that the controller tracks. Path following (Ch8) gives robust-to-wind vector-field laws for single line/orbit segments; the path manager (Ch9) sequences waypoints into continuous paths using half-plane switching, fillets, or Dubins paths, feeding its output as the position reference into the Ch3/Ch4/Ch7 controllers.
+\end{enumerate}
+
+\textbf{Course ↔ lab mapping} (from Ch0 logistics): L1 = Modelling/identification (→ Ch1/Ch2), L2 = Estimation (→ Ch5/Ch6), L3 = Motion control (→ Ch3/Ch4/Ch7). The AR.Drone platform used in labs has \textbf{no GPS} - it substitutes sonar (height) and downward-camera vision (velocity via optical flow / corner tracking), which is why the generic Beard \& McLain GPS-smoothing material (Ch6) doesn't directly transfer to the labs and is explicitly flagged as "generic background" in the sensors notes.
+
+\section{Consolidated gotchas / things to double-check before relying on this material}
+
+\begin{itemize}
+\item The quadrotor mixer matrix \texttt{M} sign/index convention (which rotor pair drives \texttt{n\_\allowbreak{}x} vs \texttt{n\_\allowbreak{}y}) is convention-dependent and left as an open in-class exercise for the × configuration and hexarotor case - don't trust a specific sign pattern without checking the rotor-numbering diagram in use.
+\item Ch3's inner-loop pole-placement example references gains $k_ω$, $k_λ$ symbolically without stating numeric values on the slides.
+\item There's a typo in the Ch5-6 course slides: the stochastic output equation is written $y = Cy + n$ but should read $y = Cx + n$.
+\item The LQR↔Kalman-filter duality slide leaves "(A, B̄) controllable?" as an open question mark in the source material itself.
+\item The geometric SO(3) attitude-control derivation (Ch7 Part II) ends mid-derivation on the exact constant needed for local (as opposed to almost-global) stability - referred to Lee/Leok/McClamroch (2010) rather than spelled out.
+\item Quaternions are mentioned once (Ch1) as an alternative attitude representation but never developed - if a lab or exam question needs quaternion kinematics, it's not in these slides.
+\end{itemize}
+
+See each \texttt{notes/0N-*.md} file for full equation-by-equation detail, worked examples, and chapter-specific open questions.
+
+\end{document}
