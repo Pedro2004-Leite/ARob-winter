@@ -18,7 +18,7 @@
 
 \begin{center}
 {\Large Solutions --- Lab 1: Modeling and Identification of the Parrot AR.Drone}\\[6pt]
-{\large Questions 2.1, 2.2, 2.3}
+{\large Questions 2.1 -- 2.6}
 \end{center}
 
 \vspace{18pt}
@@ -102,4 +102,99 @@ L^{-1} = \begin{bmatrix} 1/4 & 0 & 1/(2r) & 1/(4c) \\ 1/4 & 1/(2r) & 0 & -1/(4c)
 
 Each rotor receives a quarter of the total thrust plus/minus the roll, pitch and yaw contributions needed to produce the requested $\mathbf{n}$ --- the familiar quadrotor mixer formula.
 
+\section*{2.4 -- Nonlinear state-space dynamics $\dot{x} = g(x,u)$}
+
+\approvalbox
+
+\[
+f = mg\,R^T(\lambda)\mathbf{e}_3 - T\mathbf{e}_3.
+\]
+
+\noindent\textbf{Kinematics for ${}^B\!\dot p$.} Differentiating ${}^B\!p = R^T p$,
+\[
+{}^B\!\dot p = \dot R^T p + R^T \dot p.
+\]
+By definition of the body angular velocity (slide 24):  $\dot R = RS(\omega)$. Using $S(\cdot)^T = -S(\cdot)$ (suggestion),
+\[
+\dot R^T = S(\omega)^T R^T = -S(\omega)R^T.
+\]
+Substituting, and using $\dot p = Rv$ (given kinematics) so $R^T\dot p = R^TRv = v$:
+\[
+{}^B\!\dot p = -S(\omega)R^Tp + v = v - S(\omega)\,{}^B\!p.
+\]
+
+\noindent\textbf{Assembling $g(x,u)$.} Combining the kinematics ($\dot p = Rv$, $\dot\lambda = Q(\lambda)\omega$) with the dynamics (1) and the substitutions above:
+\[
+\dot x = g(x,u) =
+\begin{bmatrix}
+{}^B\!\dot p \\[4pt] \dot v \\[4pt] \dot\lambda \\[4pt] \dot\omega
+\end{bmatrix}
+=
+\begin{bmatrix}
+v - S(\omega)\,{}^B\!p \\[4pt]
+-S(\omega)v + g\,R^T(\lambda)\mathbf{e}_3 - (T/m)\mathbf{e}_3 \\[4pt]
+Q(\lambda)\,\omega \\[4pt]
+J^{-1}\big(u_{2:4} - S(\omega)J\omega\big)
+\end{bmatrix},
+\]
+
+\section*{2.5 -- Equilibrium point for hover}
+
+\approvalbox
+
+\noindent \textbf{Pedro's proposal: }
+
+By definition, $(x_0,u_0)$ is an equilibrium of $\dot x = g(x,u)$ if and only if $g(x_0,u_0)=0$, so the four blocks derived in 2.4 must vanish simultaneously:
+\begin{align*}
+v_0 - S(\omega_0)\,{}^B\!p_0 &= 0, &
+-S(\omega_0)v_0 + gR^T(\lambda_0)\mathbf{e}_3 - \tfrac{T_0}{m}\mathbf{e}_3 &= 0, \\
+Q(\lambda_0)\,\omega_0 &= 0, &
+n_0 - S(\omega_0)J\omega_0 &= 0.
+\end{align*}
+
+We solve these one at a time. Since $Q(\lambda_0)$ is invertible for any sensible hover attitude ($\theta_0\neq\pm\pi/2$), the third equation forces $\omega_0=0$. Plugging this back into the fourth gives $n_0=0$: no net moment at equilibrium, as expected. The first equation then collapses to $v_0=0$.
+
+The second equation is where the actual work happens. With $\omega_0=0$ it reduces to $gR^T(\lambda_0)\mathbf{e}_3 = (T_0/m)\mathbf{e}_3$. Now $R^T(\lambda)\mathbf{e}_3$ is the third row of $R(\lambda)$ read as a column, namely $[-\sin\theta,\ \sin\phi\cos\theta,\ \cos\phi\cos\theta]^T$, so componentwise
+\[
+-g\sin\theta_0 = 0, \qquad g\sin\phi_0\cos\theta_0 = 0, \qquad g\cos\phi_0\cos\theta_0 = T_0/m.
+\]
+Restricting to the physical branch $\theta_0\in(-\pi/2,\pi/2)$, the first equation gives $\theta_0=0$, which reduces the second to $\sin\phi_0=0$ and hence $\phi_0=0$, and finally the third gives $T_0=mg$. Note that $\psi_0$ never appears: a rotation about $z_B$ leaves $\mathbf{e}_3$ fixed, so any yaw is admissible and $\lambda_0=[0,\ 0,\ \psi_0]^T$ with $\psi_0$ free.
+
+Collecting everything,
+\[
+x_0 = \begin{bmatrix} {}^B\!p_0 \\ v_0 \\ \lambda_0 \\ \omega_0\end{bmatrix} = \begin{bmatrix} R_z^T(\psi_0)\,p_0 \\ \mathbf{0}_3 \\ [0,\ 0,\ \psi_0]^T \\ \mathbf{0}_3 \end{bmatrix}, \qquad u_0 = \begin{bmatrix} T_0 \\ n_0\end{bmatrix} = \begin{bmatrix} mg \\ \mathbf{0}_3\end{bmatrix},
+\]
+using ${}^B\!p_0=R^T(\lambda_0)p_0=R_z^T(\psi_0)p_0$ since $R(\lambda_0)$ reduces to a pure yaw rotation.
+
+Physically this is exactly what one would expect: at hover the drone has no linear or angular velocity, no net torque, and no roll or pitch, so the thrust vector points straight up and cancels gravity, $T_0=mg$. Both the yaw and the position are free because gravity and the thrust direction (along $z_B$) are invariant under rotation about $z_B$ --- any heading, at any point in space, is a valid hover. Feeding $u_0$ back through the mixer from 2.3 gives $\mathbf{f}_{T0}=L^{-1}u_0=\tfrac{mg}{4}\mathbf{1}_4$, i.e.\ the four rotors share the load equally, as they should for a symmetric quadrotor holding position without yawing.
+
+\section*{2.6 -- Linearized dynamics $\dot{\tilde x}=A\tilde x+B\tilde u$}
+
+\approvalbox
+
+
+
+\noindent \textbf{Pedro's proposal: }
+
+
+\noindent\textbf{Linearization strategy.} Substitute $x=x_0+\tilde x$, $u=u_0+\tilde u$ into each block of $g$ and keep only terms that are zeroth order (which cancel, since $g(x_0,u_0)=0$) or first order in $(\tilde x,\tilde u)$; any product of two or more tilde quantities is second order and is dropped. Since $v_0=\omega_0=0$ and $\tilde p_0=0$ (from 2.5), most quadratic/bilinear terms below vanish identically -- this is exactly the Jacobian $\partial g/\partial x,\partial g/\partial u$ evaluated at $(x_0,u_0)$, just obtained by direct substitution instead of symbolic differentiation.
+
+\noindent\textbf{Assembling $A$ and $B$} (state order $\tilde x=[\tilde p;\tilde v;\tilde\lambda;\tilde\omega]$, input order $\tilde u=[\tilde T;\tilde n]$):
+\[
+A=\begin{bmatrix}
+0_3 & I_3 & 0_3 & 0_3\\
+0_3 & 0_3 & A_{v\lambda} & 0_3\\
+0_3 & 0_3 & 0_3 & I_3\\
+0_3 & 0_3 & 0_3 & 0_3
+\end{bmatrix},\qquad
+A_{v\lambda}=\begin{bmatrix}0 & -g & 0\\ g & 0 & 0\\ 0 & 0 & 0\end{bmatrix},
+\]
+\[
+B=\begin{bmatrix}
+0_{3\times1} & 0_{3\times3}\\
+b_T & 0_{3\times3}\\
+0_{3\times1} & 0_{3\times3}\\
+0_{3\times1} & J^{-1}
+\end{bmatrix},\qquad b_T=\begin{bmatrix}0\\0\\-1/m\end{bmatrix}.
+\]
 \end{document}
