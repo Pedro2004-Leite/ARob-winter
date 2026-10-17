@@ -37,3 +37,7 @@ res = struct('kp', d.kp, 'cumStep', d.cumStep, 'wn', wn, 'zeta', zeta, ...
     'dcgain', dcGain, 'm', m, 'kd', kd, 'fit', fitPct, 'rmse_cm', e, ...
     'G', G, 'data', idw);
 end
+
+
+
+
