@@ -1,0 +1,297 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1.6cm,top=1.6cm,bottom=1.8cm]{geometry}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- colours and tags ----------
+\definecolor{slides}{RGB}{0,92,153}
+\definecolor{book}{RGB}{170,60,0}
+\definecolor{notes}{RGB}{40,120,60}
+\definecolor{paper}{RGB}{110,40,140}
+\definecolor{rowgray}{gray}{0.95}
+
+\newcommand{\cb}{\raisebox{-0.35ex}{\Large$\square$}}
+\newcommand{\srctag}[2]{\colorbox{#1}{\textcolor{white}{\textbf{\scriptsize\,#2\,}}}}
+\newcommand{\SLIDES}{\srctag{slides}{SLIDES}}
+\newcommand{\BOOK}{\srctag{book}{BOOK}}
+\newcommand{\NOTES}{\srctag{notes}{NOTES}}
+\newcommand{\PAPER}{\srctag{paper}{PAPER}}
+
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.6cm}}
+\newcolumntype{T}{>{\centering\arraybackslash}p{1.45cm}}
+
+% ---------- sections ----------
+\titleformat{\section}{\large\bfseries\color{slides}}{}{0pt}{}[\vspace{-0.5ex}\titlerule]
+\titlespacing*{\section}{0pt}{2.2ex}{1.2ex}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{1.8ex}{0.8ex}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5ex}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{nosep,leftmargin=1.2em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small ARob 2026/27 - Lab 2 reading plan}
+\fancyhead[R]{\small Pedro}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newtcolorbox{selfcheck}{colback=rowgray,colframe=gray!60,boxrule=0.4pt,
+  left=4pt,right=4pt,top=3pt,bottom=3pt,title={\small\bfseries Can I do this without looking?},
+  fonttitle=\small,coltitle=black,colbacktitle=gray!25}
+
+\newcommand{\chk}[1]{\par\noindent\hangindent=1.6em\hangafter=1 \cb\hspace{0.6em}#1}
+
+\begin{document}
+
+{\LARGE\bfseries\color{slides} Lab 2 - Theory reading plan}\\[0.6ex]
+{\large Estimation of Motion Variables of the Parrot AR.Drone (MEAer, UAVs, 2026/27)}\\[0.4ex]
+{\small Goal: arrive at Sections 3, 4 and 5 of the Lab 2 guide knowing every concept the questions rely on. Tick each box when done.}
+
+\subsection*{How to read this sheet}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\SLIDES & A lecture deck PDF in \texttt{lectures-22-23/}. The page number is the \textbf{PDF page} of that deck (page 1 is the cover).\\[0.5ex]
+\BOOK & \texttt{reference-book/uavbook.pdf} (Beard and McLain). Two page numbers: the one \textbf{printed} on the page, and the \textbf{PDF} page (PDF = printed + 8).\\[0.5ex]
+\NOTES & A written summary PDF or \texttt{.tex} in \texttt{lectures-22-23/notes/} or \texttt{labs-25-26/notes/}. Not slides, not the book.\\[0.5ex]
+\PAPER & The Batista, Silvestre and Oliveira article (Section 5 of the guide).\\
+\end{tabularx}
+
+\subsection*{The files used}
+
+\begin{tabularx}{\textwidth}{@{}l X r@{}}
+\toprule
+Short name & File (relative to the repository root) & Pages\\
+\midrule
+Course Ch5-6 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch5-6\_Sensors\_and\_State\_Estimation\_1.pdf} & 28\\
+Beard Sensors deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch5\_Sensors\_Beard\_McLain.pdf} & 29\\
+Beard Estimation deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch6\_State\_Estimation\_Beard\_McLain.pdf} & 47\\
+Course Ch4 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch4\_Modern\_Control\_Design.pdf} & 43\\
+Book & \texttt{reference-book/uavbook.pdf} & 401\\
+Sensors/estimation notes & \texttt{lectures-22-23/notes/03-sensors-estimation.pdf} & -\\
+Lab 2 notes (25/26) & \texttt{labs-25-26/notes/02-lab2.pdf} (and \texttt{.tex}) & -\\
+Paper & \texttt{labs-25-26/Partial attitude and rate gyro bias estimation ... .pdf} & 10\\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5ex}
+There are no recorded video lectures in the repository.
+
+% =====================================================================
+\section*{Map: guide questions $\rightarrow$ areas}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+Guide question & Area to read first\\
+\midrule
+3.1, 3.2, 3.3 (sensor mean and covariance, experiments A, B, C) & Area 1\\
+3.4 (raw pitch and roll from the accelerometer) & Area 2\\
+4.1, 4.2, 4.3 (steady-state Kalman filter, transfer functions, Q and R) & Areas 3, 4, 5\\
+4.4 (filter with gyro bias state) & Areas 5, 6, 7\\
+4.5 (complementary filters) & Area 6\\
+4.6, 4.7 (experiments A to E, roll version) & Areas 1 to 6\\
+5 (partial attitude and gyro bias, the paper) & Area 7\\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Area 0 - Prerequisites (skim, about 30 min)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & \texttt{Ch1\_Rigid\_Body} deck: attitude, Euler angles, rotation matrices & whole deck (skim)\\
+\cb & \SLIDES & \texttt{Ch2\_Quadrotor\_Modeling} deck: kinematics, relation between body rates $(p,q,r)$ and Euler-angle rates & whole deck (skim)\\
+\cb & \SLIDES & Course Ch4 deck: linear state-space models, observability & 3 to 30\\
+\cb & \SLIDES & Course Ch4 deck: Luenberger observer example & 41 to 43\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Write the small-angle relation between the gyro measurements and $\dot\phi,\dot\theta$, and say when it breaks down.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 1 - Sensor models: accelerometer, rate gyro, bias, noise \hfill\normalfont\small (guide 3.1 to 3.3)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Beard Sensors deck: accelerometer principle, measured acceleration is specific force (5 to 6), accelerometer model (9 to 10), rate gyro principle and gyro model with bias (11 to 13) & 3 to 13\\
+\cb & \BOOK & Chapter 7 ``Sensors for MAVs'', sections 7.1 Accelerometers and 7.2 Rate Gyros & printed 121 to 127; PDF 129 to 135\\
+\cb & \SLIDES & Course Ch5-6 deck: AR.Drone sensor suite & 3 to 4\\
+\cb & \SLIDES & Course Ch5-6 deck: accelerometer and rate gyro principle & 6 to 9\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: accelerometer and rate gyro sections & read once\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Why does a resting accelerometer read about $-g$ on the $z$ axis, and why is that not a bias?}
+\chk{What does the accelerometer measure during a manoeuvre, and why does that corrupt the inclinometer?}
+\chk{Explain bias, noise standard deviation and noise covariance, and what a diagonal covariance implies.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 2 - Raw roll and pitch (inclinometer) \hfill\normalfont\small (guide 3.4)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Beard Estimation deck: inverting the sensor measurement model; roll and pitch inversion under steady level flight is on 9 and 10 & 6 to 12\\
+\cb & \BOOK & Chapter 8 ``State Estimation'', sections 8.2 Low-pass Filters and 8.3 State Estimation by Inverting the Sensor Model & printed 148 to 153; PDF 156 to 161\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Derive $\theta$ from $a_x$ and $\phi$ from $a_y,a_z$ under the steady-flight assumption.}
+\chk{Say when this estimate fails (manoeuvres, vibration), and which of our experiments shows it.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 3 - Kalman filter and observers \hfill\normalfont\small (guide 4.1 to 4.3)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Beard Estimation deck: dynamic observer (13 to 15), quadratic forms and Gaussian (17 to 18), continuous-discrete Kalman filter derivation and covariance update (19 to 29) & 13 to 29\\
+\cb & \BOOK & Chapter 8, sections 8.4 Dynamic-observer Theory and 8.5 Derivation of the Continuous-discrete Kalman Filter & printed 154 to 160; PDF 162 to 168\\
+\cb & \SLIDES & Course Ch5-6 deck: Kalman filter & 12 to 13\\
+\cb & \SLIDES & Course Ch5-6 deck: duality between LQR and Kalman filter & 14\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: Kalman filter (course treatment) and practical tuning advice & read once\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{What does the steady-state Kalman filter assume that a time-varying one does not?}
+\chk{How do $Q$ and $R$ change the gain, and what does a very large $R/Q$ ratio do?}
+\chk{In MATLAB, what do \texttt{kalman()} and \texttt{estim()} take and return?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 4 - LQR and its dual \hfill\normalfont\small (guide 4.1; also Lab 3)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Course Ch4 deck: linear state-space optimal control & 26\\
+\cb & \SLIDES & Course Ch4 deck: modern control design and LQR design example & 31 to 40\\
+\cb & \BOOK & Chapter 6 ``Autopilot Design'', section 6.3 LQR Control & printed 115 to 117; PDF 123 to 125\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{State the LQR/Kalman duality: $K=R^{-1}B^{T}P$ versus $L=\Sigma C^{T}N^{-1}$, and the two Riccati equations.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 5 - Attitude filter and tuning $Q$, $R$ \hfill\normalfont\small (guide 4.1, 4.3, 4.7)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Course Ch5-6 deck: worked roll-angle example. This is the template for the lab & 15 to 23\\
+\cb & \SLIDES & Beard Estimation deck: attitude estimation with EKF & 33 to 37\\
+\cb & \SLIDES & Beard Estimation deck: suggestions for tuning your EKF & 47\\
+\cb & \BOOK & Chapter 8, section 8.8 Attitude Estimation & printed 164 to 166; PDF 172 to 174\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Name the state, the input and the measurement in the roll example, and which sensor plays which role.}
+\chk{For constant gains, write the two transfer functions from inclinometer and from gyro to the estimate.}
+\chk{Which of $Q$, $R$ would I raise for experiment B (vibration), and why?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 6 - Complementary filters \hfill\normalfont\small (guide 4.5)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Course Ch5-6 deck: complementary filters & 24 to 26\\
+\cb & \SLIDES & Course Ch5-6 deck: complementary filters and Kalman filters & 27 to 28\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: section ``Complementary filters'' & read once\\
+\bottomrule
+\end{tabularx}
+The book has no dedicated section on this (checked in its table of contents).
+\begin{selfcheck}
+\chk{State what ``complementary'' means ($G_L+G_H=1$) and where it fails.}
+\chk{Explain why a complementary filter is a Kalman filter with fixed gain.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 7 - Gyro bias and partial attitude estimation \hfill\normalfont\small (guide 4.4 and Section 5)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \PAPER & Batista, Silvestre, Oliveira, \emph{Int. J. Control} 84(5), 2011: problem statement (Sec.\ 2), observability analysis (Sec.\ 3, Theorem 3.3), filter design (Sec.\ 4), simulation results (Sec.\ 5) & journal pp.\ 895 to 903 (10 PDF pages)\\
+\cb & \NOTES & \texttt{labs-25-26/notes/02-lab2.tex}: walkthrough of the paper, including the observability theorem & read once\\
+\bottomrule
+\end{tabularx}
+The book has no dedicated section on bias estimation (checked in its table of contents).
+\begin{selfcheck}
+\chk{Why can a motionless drone not determine the full gyro bias (Theorem 3.3)?}
+\chk{Relate that to our data: experiments A, B, C (parked or hovering) versus E (mission).}
+\chk{The filter state is the vector observation and the bias, not roll and pitch: how do I recover roll and pitch?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Lab 3 pointers (not part of this lab)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \BOOK & Chapter 10, section 10.1 Straight-line Path Following & printed 198 to 203; PDF 206 to 211\\
+\cb & \SLIDES & \texttt{Ch7\_Intro\_Nonlinear\_Control} and \texttt{Ch7\_Intro\_Nonlinear\_Control\_Part\_II} decks: Lyapunov and adaptive control & pages still to be chosen\\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Suggested order and time}
+
+The times are rough estimates, not measurements.
+
+\begin{tabularx}{\textwidth}{@{}C l X r@{}}
+\toprule
+\cb & Step & Content & Time\\
+\midrule
+\cb & 1 & Area 0 and Area 1 & about 2 h\\
+\cb & 2 & Area 2 and Area 3 & about 2 h\\
+\cb & 3 & Area 4 and Area 5 & about 3 h\\
+\cb & 4 & Area 6 & about 1 h\\
+\cb & 5 & Area 7 (the paper) & about 2 h\\
+\cb & 6 & Redo every ``Can I do this without looking?'' box & about 1 h\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Minimal path if short on time}
+
+\begin{enumerate}[nosep,leftmargin=3.2em,labelsep=0.4em,label=\cb\ \arabic*.]
+\item \SLIDES\ Beard Sensors deck, pages 3 to 13.
+\item \SLIDES\ Beard Estimation deck, pages 6 to 12, then 13 to 29.
+\item \SLIDES\ Course Ch5-6 deck, pages 15 to 23, then 24 to 28.
+\item \PAPER\ The Batista article.
+\end{enumerate}
+
+\vfill
+{\footnotesize Page numbers were checked against the PDFs on 2026-10-18: slide titles page by page, and book section headings located by text search. Where a range says ``read once'' the exact pages inside that PDF were not chosen.}
+
+\end{document}

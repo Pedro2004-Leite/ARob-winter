@@ -142,3 +142,83 @@ If you want a review, these are the questions that most reveal gaps:
 
 Section 3 uses experiments A, B and C, which are validated in `LAB_NOTES.md` and stored in `data/`.
 Experiment D (pitch step) and E (mission) are for the filters in Section 4.
+
+## Best resources per area (rewritten 2026-10-18)
+
+There are no recorded video lectures in the repository.
+Every item below is one of three types, always written in capitals:
+
+- **SLIDES**: a lecture deck PDF in `lectures-22-23/`. The page given is the PDF page number of the deck (page 1 is the cover).
+- **BOOK**: `reference-book/uavbook.pdf` (Beard and McLain). Two page numbers are given, the one printed on the page and the PDF page. PDF page = printed page + 8.
+- **NOTES**: a written summary PDF in `lectures-22-23/notes/` or `labs-25-26/notes/` (not slides, not the book).
+
+Slide decks used (all in `lectures-22-23/`):
+
+- **Course Ch5-6 deck**: `22_23_UAVs_Ch5-6_Sensors_and_State_Estimation_1.pdf` (28 pages, the course's own slides, tailored to the lab).
+- **Beard Sensors deck**: `22_23_UAVs_Ch5_Sensors_Beard_McLain.pdf` (29 pages, the book's Chapter 7 slides).
+- **Beard Estimation deck**: `22_23_UAVs_Ch6_State_Estimation_Beard_McLain.pdf` (47 pages, the book's Chapter 8 slides).
+- **Course Ch4 deck**: `22_23_UAVs_Ch4_Modern_Control_Design.pdf` (43 pages).
+
+### Area 1 - Sensor models (accelerometer, rate gyro, bias, noise), for guide 3.1 to 3.3
+
+1. SLIDES, Beard Sensors deck, pages 3 to 13.
+   Page 5 and 6: measured acceleration is specific force. Pages 9 and 10: accelerometer model. Page 13: rate gyro model with bias.
+2. BOOK, Chapter 7 "Sensors for MAVs", sections 7.1 Accelerometers and 7.2 Rate Gyros.
+   Printed pages 121 to 127, PDF pages 129 to 135.
+3. SLIDES, Course Ch5-6 deck, pages 6 to 9 (accelerometer principle and rate gyro principle), and pages 3 and 4 for the AR.Drone sensor suite.
+
+### Area 2 - Raw roll and pitch (inclinometer), for guide 3.4
+
+1. SLIDES, Beard Estimation deck, pages 6 to 12 ("Inverting sensor measurement model").
+   Page 9 and 10 are the roll and pitch inversion under steady, level flight.
+2. BOOK, Chapter 8 "State Estimation", sections 8.2 Low-pass Filters and 8.3 State Estimation by Inverting the Sensor Model.
+   Printed pages 148 to 153, PDF pages 156 to 161.
+
+### Area 3 - Kalman filter and observers, for guide 4.1 to 4.3
+
+1. SLIDES, Beard Estimation deck, pages 13 to 29.
+   Pages 13 to 15: dynamic observer. Pages 16 to 18: quadratic forms and Gaussian. Pages 19 to 29: continuous-discrete Kalman filter derivation and covariance update.
+2. BOOK, Chapter 8, sections 8.4 Dynamic-observer Theory and 8.5 Derivation of the Continuous-discrete Kalman Filter.
+   Printed pages 154 to 160, PDF pages 162 to 168.
+3. SLIDES, Course Ch5-6 deck, pages 12 and 13 (Kalman filter) and page 14 (duality between LQR and Kalman filter).
+
+### Area 4 - LQR and its dual, for the Kalman gain (guide 4.1) and Lab 3
+
+1. SLIDES, Course Ch4 deck, page 26 (optimal control) and pages 31 to 40 (LQR design example).
+2. BOOK, Chapter 6 "Autopilot Design", section 6.3 LQR Control.
+   Printed pages 115 to 117, PDF pages 123 to 125.
+
+### Area 5 - Attitude filter and tuning Q and R, for guide 4.1, 4.3 and 4.7
+
+1. SLIDES, Course Ch5-6 deck, pages 15 to 23 (worked roll-angle example). This is the template for the lab.
+2. SLIDES, Beard Estimation deck, pages 33 to 37 (attitude estimation with EKF) and page 47 (tuning advice).
+3. BOOK, Chapter 8, section 8.8 Attitude Estimation.
+   Printed pages 164 to 166, PDF pages 172 to 174.
+
+### Area 6 - Complementary filters, for guide 4.5
+
+1. SLIDES, Course Ch5-6 deck, pages 24 to 26 (complementary filters) and pages 27 and 28 (relation to the Kalman filter).
+2. NOTES, `lectures-22-23/notes/03-sensors-estimation.pdf`, section "Complementary filters".
+3. The book table of contents has no dedicated section on this.
+
+### Area 7 - Gyro bias and partial attitude estimation, for guide 4.4 and Section 5
+
+1. The paper itself: `labs-25-26/Partial attitude and rate gyro bias estimation observability analysis filter design and performance evaluation.pdf` (9 pages).
+2. NOTES, `labs-25-26/notes/02-lab2.tex` (the paper walkthrough, including the observability theorem).
+3. The book table of contents has no dedicated section on bias estimation.
+
+### Lab 3 pointers
+
+- Path following: BOOK, Chapter 10, section 10.1 Straight-line Path Following. Printed pages 198 to 203, PDF pages 206 to 211.
+- LQR: Area 4 above.
+- Lyapunov and adaptive control: SLIDES `22_23_UAVs_Ch7_Intro_Nonlinear_Control.pdf` and `22_23_UAVs_Ch7_Intro_Nonlinear_Control_Part_II.pdf`. I have not read their page titles, so the pages are still to be chosen.
+
+### Minimal path if short on time
+
+1. SLIDES, Beard Sensors deck, pages 3 to 13.
+2. SLIDES, Beard Estimation deck, pages 6 to 12, then 13 to 29.
+3. SLIDES, Course Ch5-6 deck, pages 15 to 23, then 24 to 28.
+4. The Batista paper.
+
+Correction versus the first version of this section: the earlier BOOK ranges ended one page too late (for example 7.2 was given as ending at printed page 128, but 7.3 starts there).
+The ranges above end on the last page of the last listed section.
