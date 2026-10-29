@@ -23,6 +23,7 @@
 \definecolor{rowgray}{gray}{0.95}
 
 \newcommand{\cb}{\raisebox{-0.35ex}{\Large$\square$}}
+\newcommand{\cbx}{\raisebox{-0.35ex}{\Large$\boxtimes$}}
 \newcommand{\srctag}[2]{\colorbox{#1}{\textcolor{white}{\textbf{\scriptsize\,#2\,}}}}
 \newcommand{\SLIDES}{\srctag{slides}{SLIDES}}
 \newcommand{\BOOK}{\srctag{book}{BOOK}}
@@ -132,11 +133,11 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Beard Sensors deck: accelerometer principle, measured acceleration is specific force (5 to 6), accelerometer model (9 to 10), rate gyro principle and gyro model with bias (11 to 13) & 3 to 13\\
-\cb & \BOOK & Chapter 7 ``Sensors for MAVs'', sections 7.1 Accelerometers and 7.2 Rate Gyros & printed 121 to 127; PDF 129 to 135\\
-\cb & \SLIDES & Course Ch5-6 deck: AR.Drone sensor suite & 3 to 4\\
-\cb & \SLIDES & Course Ch5-6 deck: accelerometer and rate gyro principle & 6 to 9\\
-\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: accelerometer and rate gyro sections & read once\\
+\cbx & \SLIDES & Beard Sensors deck: accelerometer principle, measured acceleration is specific force (5 to 6), accelerometer model (9 to 10), rate gyro principle and gyro model with bias (11 to 13) & 3 to 13\\
+\cbx & \BOOK & Chapter 7 ``Sensors for MAVs'', sections 7.1 Accelerometers and 7.2 Rate Gyros & printed 121 to 127; PDF 129 to 135\\
+\cbx & \SLIDES & Course Ch5-6 deck: AR.Drone sensor suite & 3 to 4\\
+\cbx & \SLIDES & Course Ch5-6 deck: accelerometer and rate gyro principle & 6 to 9\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: accelerometer and rate gyro sections (1.2, 1.3 and 2.1, 2.2) & 2 to 3 and 5\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
@@ -172,7 +173,7 @@ Guide question & Area to read first\\
 \cb & \BOOK & Chapter 8, sections 8.4 Dynamic-observer Theory and 8.5 Derivation of the Continuous-discrete Kalman Filter & printed 154 to 160; PDF 162 to 168\\
 \cb & \SLIDES & Course Ch5-6 deck: Kalman filter & 12 to 13\\
 \cb & \SLIDES & Course Ch5-6 deck: duality between LQR and Kalman filter & 14\\
-\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: Kalman filter (course treatment) and practical tuning advice & read once\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: Kalman filter (1.5, 3.3, 3.4) and practical tuning advice (3.9) & 3, 7 to 8 and 10\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
@@ -225,7 +226,7 @@ Guide question & Area to read first\\
 \midrule
 \cb & \SLIDES & Course Ch5-6 deck: complementary filters & 24 to 26\\
 \cb & \SLIDES & Course Ch5-6 deck: complementary filters and Kalman filters & 27 to 28\\
-\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: section ``Complementary filters'' & read once\\
+\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: section ``Complementary filters'' (1.7) and key equations & 4 and 11\\
 \bottomrule
 \end{tabularx}
 The book has no dedicated section on this (checked in its table of contents).
@@ -242,7 +243,7 @@ The book has no dedicated section on this (checked in its table of contents).
 \cb & Type & Source and topic & Pages\\
 \midrule
 \cb & \PAPER & Batista, Silvestre, Oliveira, \emph{Int. J. Control} 84(5), 2011: problem statement (Sec.\ 2), observability analysis (Sec.\ 3, Theorem 3.3), filter design (Sec.\ 4), simulation results (Sec.\ 5) & journal pp.\ 895 to 903 (10 PDF pages)\\
-\cb & \NOTES & \texttt{labs-25-26/notes/02-lab2.tex}: walkthrough of the paper, including the observability theorem & read once\\
+\cb & \NOTES & \texttt{labs-25-26/notes/02-lab2.tex}: walkthrough of the paper, including the observability theorem (Theorem 3.3 on p.\ 4, filter on p.\ 5) & 3 to 5\\
 \bottomrule
 \end{tabularx}
 The book has no dedicated section on bias estimation (checked in its table of contents).
@@ -260,7 +261,7 @@ The book has no dedicated section on bias estimation (checked in its table of co
 \cb & Type & Source and topic & Pages\\
 \midrule
 \cb & \BOOK & Chapter 10, section 10.1 Straight-line Path Following & printed 198 to 203; PDF 206 to 211\\
-\cb & \SLIDES & \texttt{Ch7\_Intro\_Nonlinear\_Control} and \texttt{Ch7\_Intro\_Nonlinear\_Control\_Part\_II} decks: Lyapunov and adaptive control & pages still to be chosen\\
+\cb & \SLIDES & \texttt{Ch7\_Intro\_Nonlinear\_Control} and \texttt{Ch7\_Intro\_Nonlinear\_Control\_Part\_II} decks: Lyapunov theory and LaSalle (Part I), Lyapunov analysis and adaptive control (Part II) & Part I 17 to 31; Part II 14 to 18\\
 \bottomrule
 \end{tabularx}
 
@@ -292,6 +293,6 @@ The times are rough estimates, not measurements.
 \end{enumerate}
 
 \vfill
-{\footnotesize Page numbers were checked against the PDFs on 2026-10-18: slide titles page by page, and book section headings located by text search. Where a range says ``read once'' the exact pages inside that PDF were not chosen.}
+{\footnotesize Page numbers were checked against the PDFs on 2026-10-18 (notes and Lab 3 pages added on 2026-10-29): slide titles page by page, and book section headings located by text search. Pages of the notes PDFs are PDF pages.}
 
 \end{document}

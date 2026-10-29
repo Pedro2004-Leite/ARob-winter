@@ -1,0 +1,41 @@
+function res = identify_height_cl(file)
+%IDENTIFY_HEIGHT_CL Fit the closed-loop height transfer function (guide Q3.3).
+%   res = identify_height_cl(file):
+%       1. load_height_run + height_iddata: load and crop the run
+%       2. tfest: fit a 2-pole 0-zero transfer function
+%       3. kp trick: kp is known, so wn gives m = kp/wn^2, and m gives
+%          kd = 2*zeta*wn*m
+%       4. fit %% (compare) and RMSE in cm (rmse.m), the comparable metric
+%
+%   Example:
+%       res = identify_height_cl('../experiments_Pedro/real/dadosaltura1.55_1.mat');
+
+d   = load_height_run(file);
+idw = height_iddata(d);
+
+G = tfest(idw, 2, 0, tfestOptions('InitialCondition', 'zero'));
+
+cz = compareOptions('InitialCondition', 'z');
+[ym, fitPct] = compare(idw, G, cz);
+
+[num, den] = tfdata(G, 'v');
+wn     = sqrt(den(3));
+zeta   = den(2) / (2 * wn);
+dcGain = num(end) / den(end);   % should be close to 1 if Fig. 2 fits
+
+m  = d.kp / wn^2;             % truque do kp: kp conhecido -> m
+kd = 2 * zeta * wn * m;       % a partir de m -> kd
+
+e = 100 * rmse(idw.y, ym.y);  % cm
+
+fprintf(['kp = %g, step = %g m: wn = %.2f rad/s, zeta = %.2f, DC gain = %.3f ', ...
+    '-> m = %.3f, kd = %.3f | fit = %.1f %%, RMSE = %.2f cm\n'], ...
+    d.kp, d.cumStep, wn, zeta, dcGain, m, kd, fitPct, e);
+compare(idw, G, cz);
+
+res = struct('kp', d.kp, 'cumStep', d.cumStep, 'wn', wn, 'zeta', zeta, ...
+    'dcgain', dcGain, 'm', m, 'kd', kd, 'fit', fitPct, 'rmse_cm', e, ...
+    'G', G, 'data', idw);
+end
+
+
