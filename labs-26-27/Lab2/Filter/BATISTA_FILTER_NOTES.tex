@@ -1,0 +1,247 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+% Portuguese hyphenation when babel-portuges is installed (it is on Overleaf);
+% the accents below are plain TeX commands, so it also compiles without it.
+\IfFileExists{portuges.ldf}{\usepackage[portuguese]{babel}}{\emergencystretch=3em}
+\usepackage[a4paper,margin=2cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- colours ----------
+\definecolor{accent}{RGB}{0,92,153}
+\definecolor{rowgray}{gray}{0.95}
+
+% ---------- sections ----------
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.6em}{}[\vspace{-0.5ex}\titlerule]
+\titlespacing*{\section}{0pt}{2.2ex}{1.2ex}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{1.8ex}{0.8ex}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6ex}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{nosep,leftmargin=1.4em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small ARob 2026/27 - Lab 2, Sec\c{c}\~ao 5}
+\fancyhead[R]{\small Pedro}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newtcolorbox{caveat}{colback=rowgray,colframe=gray!60,boxrule=0.4pt,
+  left=5pt,right=5pt,top=3pt,bottom=3pt}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\Sk}{S}          % skew-symmetric matrix
+\newcommand{\wm}{\omega_m}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Filtro de Batista et al.\ no Lab 2 (Sec\c{c}\~ao 5)}\\[0.6ex]
+{\large Apontamento sobre a l\'ogica, as escolhas e a valida\c{c}\~ao}\\[0.6ex]
+{\small 2 de novembro de 2026}
+\end{center}
+
+Este apontamento explica a l\'ogica do que foi implementado, porque foi feito assim, o que foi validado e o que fica por verificar.
+Os n\'umeros reportados saem todos de execu\c{c}\~oes dos scripts da pasta \code{labs-26-27/Lab2/Filter/} (comandos na sec\c{c}\~ao~\ref{sec:repro}).
+
+%% ------------------------------------------------------------------
+\section{O que foi feito}
+
+Implementou-se o filtro de Kalman do paper de Batista, Silvestre e Oliveira (\emph{Int.\ J.\ Control}, 2011), para o sistema nominal~(2), com estima\c{c}\~ao parcial da atitude (roll e pitch) e do bias dos tr\^es rate gyros.
+O filtro est\'a em Simulink, em tempo cont\'inuo, e foi testado de duas formas.
+Primeiro sobre os dados reais das experi\^encias A a E (modelo de \emph{Replay} do DevKit).
+Depois sobre uma simula\c{c}\~ao com verdade conhecida, onde o erro absoluto se pode medir.
+
+%% ------------------------------------------------------------------
+\section{O modelo e o filtro}
+
+A atitude obedece a $\dot R = R\,\Sk(\omega)$, com $R$ a rota\c{c}\~ao do corpo para o referencial inercial.
+O aceler\'ometro mede, em eixos do corpo, um vetor constante no referencial inercial (a gravidade): $y = R^\top c$.
+Derivando, e usando $\wm = \omega + b$ (gyro com bias), obt\'em-se
+\[
+\dot y = -\Sk(\omega)\,y = -\Sk(\wm)\,y - \Sk(y)\,b .
+\]
+O estado \'e $x = [\,y;\ b\,] \in \mathbb{R}^6$, com o bias constante:
+\[
+\dot x = A(t)\,x,\qquad
+A = \begin{bmatrix} -\Sk(\wm) & -\Sk(y) \\ 0 & 0 \end{bmatrix},\qquad
+y = C x,\quad C = \begin{bmatrix} I & 0 \end{bmatrix}.
+\]
+O sistema \'e n\~ao linear, mas $A(t)$ s\'o depende de $y$ e de $\wm$, que s\~ao ambos medidos.
+Por isso pode tratar-se como linear vari\'avel no tempo e aplicar o Kalman--Bucy cl\'assico:
+\[
+\dot{\hat x} = A\hat x + K\,(y - C\hat x),\qquad K = P C^\top \Theta^{-1},
+\]
+\[
+\dot P = A P + P A^\top + \Xi - P C^\top \Theta^{-1} C P .
+\]
+$\Xi$ e $\Theta$ s\~ao as intensidades do ru\'ido de processo e de medida.
+O ganho tem de ser recalculado a cada instante porque $A(t)$ muda (n\~ao \'e o ganho estacion\'ario da sec\c{c}\~ao~4 do guia).
+
+\textbf{Observabilidade} (Teoremas 3.3 e 3.4 do paper): o sistema \'e observ\'avel se $y$ n\~ao for constante, e a estabilidade do erro precisa de que $y$ continue a variar (excita\c{c}\~ao persistente).
+Com o drone parado, o bias na dire\c{c}\~ao da gravidade (o gyro $z$) n\~ao \'e observ\'avel.
+
+%% ------------------------------------------------------------------
+\section{Implementa\c{c}\~ao}
+
+Ficheiros em \code{labs-26-27/Lab2/Filter/}:
+\begin{itemize}
+  \item \code{ARDroneReplay\_BatistaKF.slx}: o filtro sobre os dados gravados.
+  \item \code{ARDroneSim\_BatistaKF.slx}: o mesmo filtro sobre uma experi\^encia sint\'etica com verdade conhecida.
+  \item \code{run\_batista\_kf.m} e \code{run\_batista\_kf\_sim.m}: correm cada modelo, abrem os scopes e imprimem um resumo.
+  \item \code{build\_batista\_kf\_model.m}: regenera os dois modelos (o filtro \'e um bloco partilhado).
+\end{itemize}
+
+Escolhas de implementa\c{c}\~ao:
+\begin{itemize}
+  \item \textbf{Tempo cont\'inuo.} Segue o paper. $\hat x$ e $P$ s\~ao integrados por blocos \emph{Integrator}, com solver de passo fixo \code{ode1} a 5~ms (o per\'iodo dos dados e o solver do modelo original do DevKit).
+  \item \textbf{Unidades.} O aceler\'ometro vem em mg e passa a m/s$^2$ ($\times 9{,}81/1000$). Os gyros v\^em em deg/s e passam a rad/s. Os \^angulos mostram-se em graus.
+  \item \textbf{Sinais.} Neste sensor $a_z = -g$ em repouso. Por isso $\phi = \operatorname{atan2}(-a_y,-a_z)$ e $\theta = \arcsin(a_x/\lVert y\rVert)$. A f\'ormula $\operatorname{atan2}(a_y,a_z)$ d\'a $\phi + 180^\circ$. O $\wm$ entra diretamente dos gyros: $g_x$ e $g_y$ t\^em correla\c{c}\~ao de $+0{,}97$ a $+0{,}98$ e $+0{,}94$ a $+0{,}98$ com as derivadas de $\phi$ e $\theta$.
+  \item \textbf{\^Angulos.} Calculam-se a partir do vetor filtrado $\hat x_1$, e n\~ao do aceler\'ometro cru.
+  \item \textbf{Condi\c{c}\~oes iniciais.} $x_0 = [0,0,-g,0,0,0]$ (nivelado, bias nulo) e $P_0 = \operatorname{blkdiag}(I,\,0{,}01\,I)$. N\~ao se usa a primeira amostra, porque o primeiro pacote do \code{navdata} \'e todo zeros.
+\end{itemize}
+
+%% ------------------------------------------------------------------
+\section{Afina\c{c}\~ao}
+
+\[
+\Xi = \operatorname{blkdiag}\!\big((g\cdot 0{,}035)^2\,T_s\,I_3,\ 10^{-5} I_3\big),\qquad
+\Theta = 10^{3}\cdot 0{,}07^2\,T_s\,I_3,\qquad T_s = 5~\text{ms}.
+\]
+\begin{itemize}
+  \item \textbf{Ru\'ido de medida $\Theta$.} $0{,}07$~m/s$^2$ \'e o desvio do aceler\'ometro em hover (experi\^encia C: 0,059 a 0,077). Multiplica-se por $T_s$ para passar de vari\^ancia amostrada a intensidade cont\'inua, como no \code{kalman\_filters.m} da sec\c{c}\~ao~4.
+  \item \textbf{Fator 1000 em $\Theta$.} Em voo o erro do aceler\'ometro n\~ao \'e ru\'ido branco, \'e vibra\c{c}\~ao e acelera\c{c}\~ao linear. Por isso a medida merece menos confian\c{c}a do que o ru\'ido sugere.
+  \item \textbf{Ru\'ido de processo $\Xi$.} O ru\'ido dos gyros entra em $\dot y$ multiplicado por $y$, que tem m\'odulo $\approx g$, da\'i $(g\sigma_g)^2 T_s$ com $\sigma_g = 0{,}035$~rad/s (hover). O $10^{-5}$ \'e a intensidade do passeio aleat\'orio do bias.
+  \item \textbf{Como foram escolhidos.} O fator 1000 e o $10^{-5}$ v\^em de um varrimento (fator entre 1 e $10^5$, intensidade do bias entre $10^{-8}$ e $10^{-4}$) nas experi\^encias D e E, a minimizar o erro contra o estimador interno do drone.
+\end{itemize}
+
+\begin{caveat}
+Esta afina\c{c}\~ao \'e heur\'istica e tem duas fraquezas assumidas.
+Foi feita nos mesmos dados em que depois se avalia.
+E a refer\^encia (o estimador interno do drone) n\~ao \'e a verdade.
+\end{caveat}
+
+%% ------------------------------------------------------------------
+\section{Valida\c{c}\~ao}
+
+\subsection{Simula\c{c}\~ao com verdade conhecida}
+
+Roll de $8^\circ$ a 0,30~Hz e pitch de $6^\circ$ a 0,45~Hz (fase de $60^\circ$), yaw parado.
+Frequ\^encias diferentes mant\^em $y$ a mudar de dire\c{c}\~ao (condi\c{c}\~ao de excita\c{c}\~ao do Teorema 3.4).
+Gyros e aceler\'ometro saem da cinem\'atica exata (verificado numericamente: $\dot y + \Sk(\omega)y \approx 10^{-8}$, contra uma derivada de $\approx 2{,}6$).
+Ru\'ido gaussiano de 0,07~m/s$^2$ no aceler\'ometro e 0,01~rad/s nos gyros, bias dos gyros de $[2,-3,1]$~deg/s (o valor da simula\c{c}\~ao do paper).
+Erro depois de 10~s de transit\'orio, contra a verdade:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Caso & RMS $\phi/\theta$ [$^\circ$] & Erro m\'edio $\phi/\theta$ [$^\circ$] & Bias estimado [deg/s] \\
+\midrule
+Por defeito & 0,05 / 0,05 & $+0{,}01$ / 0,00 & [2,01, $-3{,}01$, 0,96] \\
+Bias de aceler\'ometro $[-0{,}033,\,-0{,}166,\,0]$ m/s$^2$ & 0,98 / 0,20 & $+0{,}98$ / $-0{,}19$ & [2,01, $-3{,}01$, 0,89] \\
+Ru\'ido $\times 0{,}01$ & 0,03 / 0,03 & 0,00 / 0,00 & [2,00, $-3{,}00$, 0,93] \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+O bias verdadeiro dos gyros \'e $[2,-3,1]$ deg/s.
+O filtro est\'a correto: o erro \'e $\approx 0{,}05^\circ$ e o bias \'e recuperado nos tr\^es eixos.
+Um bias no aceler\'ometro produz um offset constante em $\phi$ e $\theta$ que o filtro n\~ao consegue corrigir.
+
+\subsection{Dados reais contra o estimador interno do drone}
+
+Nos dados reais n\~ao h\'a verdade.
+A compara\c{c}\~ao faz-se contra os \code{states} do drone (portas 1 e 2 do bloco de Replay), em $t > 10$~s e $t < t_{\text{fim}} - 3$~s (sem descolagem nem aterragem).
+O RMS calcula-se depois de retirar o offset constante, que se reporta \`a parte:
+
+\begin{center}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Exp. & RMS $\phi/\theta$ [$^\circ$] & Offset $\phi/\theta$ sem calibrar [$^\circ$] & Offset $\phi/\theta$ calibrado [$^\circ$] \\
+\midrule
+C (hover)           & 0,11 / 0,11 & $+2{,}15$ / $+1{,}03$ & $+0{,}40$ / $+0{,}57$ \\
+D (passos de pitch) & 0,24 / 0,55 & $+1{,}32$ / $+0{,}73$ & $-0{,}24$ / $+0{,}71$ \\
+E (miss\~ao)        & 0,40 / 0,37 & $+2{,}25$ / $+0{,}30$ & $-0{,}31$ / $+0{,}28$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Para compara\c{c}\~ao, o inclin\'ometro cru (sem filtro passa-baixo) em D d\'a 0,89 / 1,61$^\circ$.
+Esta linha de base \'e favor\'avel ao filtro, porque o inclin\'ometro n\~ao foi filtrado.
+
+\subsection{Bias artificial nos dados reais}
+
+O bias real dos gyros \'e $\approx 0$ (m\'edia em repouso de $[-0{,}03,\,-0{,}02,\,0{,}01]$ deg/s), por isso n\~ao h\'a nada a convergir.
+Como sugere o guia (4.4), injetou-se um bias artificial de $[3,-2,1]$ deg/s nos gyros da experi\^encia D.
+O bias estimado no fim foi $[3{,}10,\,-2{,}01,\,2{,}85]$ deg/s: converge bem em $x$ e $y$, e pior em $z$.
+
+%% ------------------------------------------------------------------
+\section{O desvio constante de \texorpdfstring{$\phi$}{phi}}
+
+Nos dados reais o filtro fica 1 a $2^\circ$ acima do drone em $\phi$.
+A explica\c{c}\~ao \'e o bias do aceler\'ometro:
+\begin{itemize}
+  \item A simula\c{c}\~ao mostra o mecanismo: um bias de aceler\'ometro igual ao medido em repouso (A) d\'a exatamente o offset esperado ($+0{,}98^\circ$ em $\phi$).
+  \item O filtro n\~ao o pode estimar: com uma \'unica medida vetorial, o bias do aceler\'ometro \'e indistingu\'ivel de uma inclina\c{c}\~ao.
+  \item O bias varia de uma experi\^encia para outra. No ch\~ao, no in\'icio de C, D e E, o $a_y$ \'e $-0{,}29$, $-0{,}26$ e $-0{,}45$ m/s$^2$ (inclina\c{c}\~ao aparente de 1,8, 1,6 e $2{,}6^\circ$), enquanto o drone marca $\approx 0^\circ$. Em repouso na experi\^encia A era $-0{,}17$ m/s$^2$ ($1{,}0^\circ$). Calibrar com A removia s\'o cerca de $1^\circ$.
+\end{itemize}
+
+Por isso implementou-se uma calibra\c{c}\~ao opcional (\code{calibrate}, desligada por defeito): m\'edia causal de $a_x$ e $a_y$ durante os primeiros 1,5~s de cada ficheiro (o drone est\'a no ch\~ao), congelada depois.
+A descolagem s\'o ocorre a partir de 2,2~s nas tr\^es experi\^encias.
+S\'o se corrigem $a_x$ e $a_y$, porque $a_z$ entra na inclina\c{c}\~ao s\'o em segunda ordem.
+
+\begin{caveat}
+\textbf{Pressupostos e cuidados.}
+\begin{itemize}
+  \item Assume que o drone come\c{c}a nivelado. Se n\~ao estiver, a calibra\c{c}\~ao desloca a inclina\c{c}\~ao.
+  \item O offset que desaparece \'e contra o zero do drone (o seu trim), que n\~ao \'e a verdade. A calibra\c{c}\~ao melhora o alinhamento com o estimador interno, mas n\~ao prova que o \^angulo absoluto esteja certo.
+  \item N\~ao usa a refer\^encia: s\'o o aceler\'ometro dos primeiros 1,5~s. O \'unico par\^ametro \'e a dura\c{c}\~ao, e n\~ao foi ajustado ao resultado.
+  \item N\~ao altera o RMS, nem o erro nas manobras fortes (a\'i o aceler\'ometro l\^e acelera\c{c}\~ao linear como inclina\c{c}\~ao).
+  \item Recomenda-se apresentar os resultados com e sem calibra\c{c}\~ao.
+\end{itemize}
+\end{caveat}
+
+%% ------------------------------------------------------------------
+\section{Limita\c{c}\~oes e o que n\~ao foi verificado}
+
+\begin{itemize}
+  \item O estimador interno do drone n\~ao \'e verdade. S\'o a simula\c{c}\~ao mede erro absoluto, e usa sensores simulados.
+  \item A afina\c{c}\~ao foi feita nos dados de avalia\c{c}\~ao (sec\c{c}\~ao~4).
+  \item Em $\theta$ sobram 0,3 a $0{,}7^\circ$ de offset em C e D que a calibra\c{c}\~ao n\~ao explica. As causas poss\'iveis (trim do drone, efeitos em voo) n\~ao foram testadas.
+  \item O bias do gyro $z$ s\'o \'e fi\'avel se o drone rodar. Em E estima $-1{,}9$ deg/s, quando o bias real \'e $\approx 0{,}2$ deg/s.
+  \item \code{ode1} foi escolhido por ser o solver do modelo original e porque o Replay descodifica bytes (passos interm\'edios interpol\'a-los-iam). N\~ao se comparou com RK4.
+  \item O aceler\'ometro mede acelera\c{c}\~ao linear al\'em da gravidade, o que domina o erro nas manobras fortes.
+\end{itemize}
+
+%% ------------------------------------------------------------------
+\section{Como reproduzir}\label{sec:repro}
+
+No MATLAB, em \code{Filter/}:
+
+\begin{verbatim}
+out = run_batista_kf('E');                              % dados reais, 2 scopes
+out = run_batista_kf('E', calibrate=1.5);               % com calibracao do acelerometro
+out = run_batista_kf('D', bias=[3 -2 1]);               % bias artificial nos gyros
+out = run_batista_kf_sim;                               % verdade conhecida, 3 scopes
+out = run_batista_kf_sim(accbias=[-0.033 -0.166 0]);    % com bias de acelerometro
+\end{verbatim}
+
+Op\c{c}\~oes comuns: \code{pacing=0} (o mais depressa poss\'ivel) e \code{scopes=false} (sem janelas).
+Cada execu\c{c}\~ao imprime o RMS, o offset e o bias estimado.
+
+\end{document}
