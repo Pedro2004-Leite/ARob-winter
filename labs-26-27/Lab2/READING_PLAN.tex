@@ -56,6 +56,7 @@
   fonttitle=\small,coltitle=black,colbacktitle=gray!25}
 
 \newcommand{\chk}[1]{\par\noindent\hangindent=1.6em\hangafter=1 \cb\hspace{0.6em}#1}
+\newcommand{\chkx}[1]{\par\noindent\hangindent=1.6em\hangafter=1 \cbx\hspace{0.6em}#1}
 
 \begin{document}
 
@@ -153,8 +154,8 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Beard Estimation deck: inverting the sensor measurement model; roll and pitch inversion under steady level flight is on 9 and 10 & 6 to 12\\
-\cb & \BOOK & Chapter 8 ``State Estimation'', sections 8.2 Low-pass Filters and 8.3 State Estimation by Inverting the Sensor Model & printed 148 to 153; PDF 156 to 161\\
+\cbx & \SLIDES & Beard Estimation deck: inverting the sensor measurement model; roll and pitch inversion under steady level flight is on 9 and 10 & 6 to 12\\
+\cbx & \BOOK & Chapter 8 ``State Estimation'', sections 8.2 Low-pass Filters and 8.3 State Estimation by Inverting the Sensor Model & printed 148 to 153; PDF 156 to 161\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
@@ -169,17 +170,17 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Beard Estimation deck: dynamic observer (13 to 15), quadratic forms and Gaussian (17 to 18), continuous-discrete Kalman filter derivation and covariance update (19 to 29) & 13 to 29\\
-\cb & \BOOK & Chapter 8, sections 8.4 Dynamic-observer Theory and 8.5 Derivation of the Continuous-discrete Kalman Filter & printed 154 to 160; PDF 162 to 168\\
-\cb & \SLIDES & Course Ch5-6 deck: Kalman filter & 12 to 13\\
-\cb & \SLIDES & Course Ch5-6 deck: duality between LQR and Kalman filter & 14\\
+\cbx & \SLIDES & Beard Estimation deck: dynamic observer (13 to 15), quadratic forms and Gaussian (17 to 18), continuous-discrete Kalman filter derivation and covariance update (19 to 29) & 13 to 29\\
+\cbx & \BOOK & Chapter 8, sections 8.4 Dynamic-observer Theory and 8.5 Derivation of the Continuous-discrete Kalman Filter & printed 154 to 160; PDF 162 to 168\\
+\cbx & \SLIDES & Course Ch5-6 deck: Kalman filter & 12 to 13\\
+\cbx & \SLIDES & Course Ch5-6 deck: duality between LQR and Kalman filter & 14\\
 \cb & \NOTES & \texttt{03-sensors-estimation.pdf}: Kalman filter (1.5, 3.3, 3.4) and practical tuning advice (3.9) & 3, 7 to 8 and 10\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
-\chk{What does the steady-state Kalman filter assume that a time-varying one does not?}
-\chk{How do $Q$ and $R$ change the gain, and what does a very large $R/Q$ ratio do?}
-\chk{In MATLAB, what do \texttt{kalman()} and \texttt{estim()} take and return?}
+\chkx{What does the steady-state Kalman filter assume that a time-varying one does not?}
+\chkx{How do $Q$ and $R$ change the gain, and what does a very large $R/Q$ ratio do?}
+\chkx{In MATLAB, what do \texttt{kalman()} and \texttt{estim()} take and return?}
 \end{selfcheck}
 
 % =====================================================================
@@ -189,13 +190,13 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Course Ch4 deck: linear state-space optimal control & 26\\
-\cb & \SLIDES & Course Ch4 deck: modern control design and LQR design example & 31 to 40\\
-\cb & \BOOK & Chapter 6 ``Autopilot Design'', section 6.3 LQR Control & printed 115 to 117; PDF 123 to 125\\
+\cbx & \SLIDES & Course Ch4 deck: linear state-space optimal control & 26\\
+\cbx & \SLIDES & Course Ch4 deck: modern control design and LQR design example & 31 to 40\\
+\cbx & \BOOK & Chapter 6 ``Autopilot Design'', section 6.3 LQR Control & printed 115 to 117; PDF 123 to 125\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
-\chk{State the LQR/Kalman duality: $K=R^{-1}B^{T}P$ versus $L=\Sigma C^{T}N^{-1}$, and the two Riccati equations.}
+\chkx{State the LQR/Kalman duality: $K=R^{-1}B^{T}P$ versus $L=\Sigma C^{T}N^{-1}$, and the two Riccati equations.}
 \end{selfcheck}
 
 % =====================================================================
@@ -205,16 +206,16 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Course Ch5-6 deck: worked roll-angle example. This is the template for the lab & 15 to 23\\
-\cb & \SLIDES & Beard Estimation deck: attitude estimation with EKF & 33 to 37\\
-\cb & \SLIDES & Beard Estimation deck: suggestions for tuning your EKF & 47\\
-\cb & \BOOK & Chapter 8, section 8.8 Attitude Estimation & printed 164 to 166; PDF 172 to 174\\
+\cbx & \SLIDES & Course Ch5-6 deck: worked roll-angle example. This is the template for the lab & 15 to 23\\
+\cbx & \SLIDES & Beard Estimation deck: attitude estimation with EKF & 33 to 37\\
+\cbx & \SLIDES & Beard Estimation deck: suggestions for tuning your EKF & 47\\
+\cbx & \BOOK & Chapter 8, section 8.8 Attitude Estimation & printed 164 to 166; PDF 172 to 174\\
 \bottomrule
 \end{tabularx}
 \begin{selfcheck}
-\chk{Name the state, the input and the measurement in the roll example, and which sensor plays which role.}
-\chk{For constant gains, write the two transfer functions from inclinometer and from gyro to the estimate.}
-\chk{Which of $Q$, $R$ would I raise for experiment B (vibration), and why?}
+\chkx{Name the state, the input and the measurement in the roll example, and which sensor plays which role.}
+\chkx{For constant gains, write the two transfer functions from inclinometer and from gyro to the estimate.}
+\chkx{Which of $Q$, $R$ would I raise for experiment B (vibration), and why?}
 \end{selfcheck}
 
 % =====================================================================
@@ -224,15 +225,15 @@ Guide question & Area to read first\\
 \toprule
 \cb & Type & Source and topic & Pages\\
 \midrule
-\cb & \SLIDES & Course Ch5-6 deck: complementary filters & 24 to 26\\
-\cb & \SLIDES & Course Ch5-6 deck: complementary filters and Kalman filters & 27 to 28\\
-\cb & \NOTES & \texttt{03-sensors-estimation.pdf}: section ``Complementary filters'' (1.7) and key equations & 4 and 11\\
+\cbx & \SLIDES & Course Ch5-6 deck: complementary filters & 24 to 26\\
+\cbx & \SLIDES & Course Ch5-6 deck: complementary filters and Kalman filters & 27 to 28\\
+\cbx & \NOTES & \texttt{03-sensors-estimation.pdf}: section ``Complementary filters'' (1.7) and key equations & 4 and 11\\
 \bottomrule
 \end{tabularx}
 The book has no dedicated section on this (checked in its table of contents).
 \begin{selfcheck}
-\chk{State what ``complementary'' means ($G_L+G_H=1$) and where it fails.}
-\chk{Explain why a complementary filter is a Kalman filter with fixed gain.}
+\chkx{State what ``complementary'' means ($G_L+G_H=1$) and where it fails.}
+\chkx{Explain why a complementary filter is a Kalman filter with fixed gain.}
 \end{selfcheck}
 
 % =====================================================================
@@ -277,7 +278,7 @@ The times are rough estimates, not measurements.
 \cb & 1 & Area 0 and Area 1 & about 2 h\\
 \cb & 2 & Area 2 and Area 3 & about 2 h\\
 \cb & 3 & Area 4 and Area 5 & about 3 h\\
-\cb & 4 & Area 6 & about 1 h\\
+\cbx & 4 & Area 6 & about 1 h\\
 \cb & 5 & Area 7 (the paper) & about 2 h\\
 \cb & 6 & Redo every ``Can I do this without looking?'' box & about 1 h\\
 \bottomrule
