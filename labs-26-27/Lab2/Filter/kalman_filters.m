@@ -3,7 +3,8 @@
 % Run this script from anywhere; it finds the data in ../data.
 % It prints every number used in the report and saves the figures to
 % ./figures. All filters are designed in continuous time with kalman()
-% (Control System Toolbox) and run on the flight data with lsim().
+% (Control System Toolbox) and run with lsim(), first in simulation (known
+% true attitude, simulated sensors) and then on the flight data.
 %
 % Filters (per axis, pitch shown; roll is the same with p and phi):
 %   KF1 (4.1)  x = theta              theta_dot = w_ym + n_g
@@ -18,8 +19,14 @@
 % "Tuned" filters multiply R by the rho that fits the flight experiment best
 % (4.3): in flight the inclinometer error is model error, not sensor noise.
 %
-% Every filter is compared with the measurement (inclinometer) and with the
-% state recorded in flight: the AR.Drone's own onboard attitude estimate
+% Simulation: the attitude comes from a closed-loop model driven by reference
+% steps (pitch: Lab 1 identification; roll: DevKit ssRoll), and the sensors are
+% that attitude and its rate plus white noise with the hover variances. In 4.4
+% an artificial bias cfg.bArt is added to the simulated gyro to tune qb.
+%
+% On the flight data the bias is the sensor's own, and every filter is compared
+% with the measurement (inclinometer) and with the state recorded in flight:
+% the AR.Drone's own onboard attitude estimate
 % (states(:,1:2)), which also uses the camera/velocity aiding. It is not the
 % truth, so the comparison is on the shape (std of the difference), and the
 % constant offset between the two is reported separately.
@@ -36,10 +43,22 @@ cfg.Ts    = 0.005;      % navdata sample time [s] (200 Hz), only for variance ->
 cfg.g     = 9.81;
 cfg.noise = 'C';        % experiment whose statistics give Q and R (hover)
 cfg.qb    = 1e-4;       % KF2: bias random-walk intensity [rad/s/sqrt(s)]
-cfg.qbSweep = [1e-4 1e-3 1e-2];     % 4.4: values tried with the artificial bias
+cfg.qbSweep = [1e-4 1e-3 1e-2];     % 4.4: values tried in simulation and on the real gyro
+cfg.qbSim = 1e-3;       % KF2 in simulation: lowest error of cfg.qbSweep (4.4)
+cfg.bArt  = 0.05;       % artificial gyro bias in simulation [rad/s] (~2.9 deg/s)
+cfg.tSettle = 5;        % simulation: start of the metrics, after the initial transient [s]
+cfg.tLate = 30;         % simulation: start of the steady-state bias metrics [s]
 cfg.rhoSweep = logspace(-2, 4, 13); % 4.3: R is multiplied by rho
-cfg.bArt  = 0.05;       % artificial gyro bias for 4.4 [rad/s] (~2.9 deg/s)
 cfg.Rtune = [];         % R multiplier of the tuned filters ([] = take the 4.3 optimum)
+cfg.inclSource = 'accel';  % inclinometer: 'accel', 'state' or 'estimated' (see the header)
+cfg.inclRho = 31.6;     % 'estimated': R multiplier of the first-pass KF1 (about the 4.3 optimum)
+
+% Closed-loop attitude models for the simulation (reference -> angle): pitch
+% from the Lab 1 identification (report Q4.2), roll from the DevKit
+s = tf('s');
+cfg.model.pitch = ss(0.9088*(s + 21.19) / (s^2 + 2*0.4916*6.822*s + 6.822^2));
+D = load(fullfile(here, '..', 'DevKit_Lab2', 'ARDroneSimulinkDevKit_NAV', 'lib', 'ssRoll.mat'));
+cfg.model.roll = D.ssRoll;
 
 % Experiments and evaluation windows [s] (see LAB_NOTES.md; the takeoff and
 % landing transients are excluded)
@@ -103,6 +122,32 @@ function R = axis_study(axisName, EX, cfg, figdir)
     fprintf('     Riccati: 0 = Q - P^2/R  ->  P = sqrt(Q R), L = P/R = sqrt(Q/R)\n');
     fprintf('     L = %.3f rad/s (kalman), sqrt(Q/R) = %.3f rad/s\n', kf1.L, sqrt(Q/Rm));
     fprintf('     filter pole: s = %.3f rad/s (%.2f Hz)\n', -kf1.L, kf1.L/2/pi);
+
+    % Simulation phase: known true attitude, simulated white-noise sensors
+    S0 = simulate_truth(cfg.model.(axisName), Ts, sg, sm, 0);
+    th1s = run_kf(kf1, S0.t, S0.wm, S0.ym);
+    ws = S0.t >= cfg.tSettle;
+    R.sim.rmsIncl = rms(S0.ym(ws) - S0.ang(ws));
+    R.sim.rmsKF1 = rms(th1s(ws) - S0.ang(ws));
+    fprintf('     simulation: rms(incl - true) = %.3f deg, rms(KF1 - true) = %.3f deg, sqrt(P) = %.3f deg\n', ...
+        rad2deg(R.sim.rmsIncl), rad2deg(R.sim.rmsKF1), rad2deg(sqrt(kf1.P)));
+
+    f = figure('Name', ['4.1 sim ' axisName], 'Position', [50 50 1000 600]);
+    subplot(2,1,1);
+    plot(S0.t, rad2deg(S0.ym), 'Color', [0.75 0.75 0.75]); hold on;
+    plot(S0.t, rad2deg(S0.ang), 'k', 'LineWidth', 1.5);
+    plot(S0.t, rad2deg(th1s), 'b');
+    ylabel([sym ' [deg]']); grid on;
+    legend('measurement (inclinometer)', 'true state', 'KF1', 'Location', 'best');
+    title(['4.1 Simulation, ' axisName ', KF1 (no bias)']);
+    subplot(2,1,2);
+    plot(S0.t, rad2deg(S0.ym - S0.ang), 'Color', [0.75 0.75 0.75]); hold on;
+    plot(S0.t, rad2deg(th1s - S0.ang), 'b');
+    ylabel('error [deg]'); xlabel('t [s]'); grid on;
+    legend('measurement (inclinometer)', 'KF1', 'Location', 'best');
+    save_fig(f, figdir, ['4_1_sim_' axisName]);
+
+    % Flight data
     th1 = run_kf(kf1, EF.t, EF.gyro(:,gi), EF.([ang '_m']));
     fprintf('     experiment %s: std(incl - flight) = %.3f deg, std(KF1 - flight) = %.3f deg\n', flight, ...
         rad2deg(std(EF.([ang '_m'])(EF.win) - ref(EF.win))), rad2deg(std(th1(EF.win) - ref(EF.win))));
@@ -126,7 +171,7 @@ function R = axis_study(axisName, EX, cfg, figdir)
     fprintf('     crossover = %.2f Hz\n', kf1.L/2/pi);
 
     %% 4.3 Impact of Q and R: sweep R -> rho R on the flight experiment
-    sdev = zeros(size(cfg.rhoSweep));  snoise = sdev;
+    sdev = zeros(size(cfg.rhoSweep));  snoise = sdev;  ssim = sdev;
     EC = EX(strcmp({EX.name}, 'C'));
     for i = 1:numel(cfg.rhoSweep)
         k = design_kf(Q, cfg.rhoSweep(i)*Rm, []);
@@ -134,15 +179,19 @@ function R = axis_study(axisName, EX, cfg, figdir)
         sdev(i) = std(th(EF.win) - ref(EF.win));
         thc = run_kf(k, EC.t, EC.gyro(:,gi), EC.([ang '_m']));
         snoise(i) = std(thc(EC.win));
+        ths = run_kf(k, S0.t, S0.wm, S0.ym);
+        ssim(i) = rms(ths(ws) - S0.ang(ws));
     end
     [~, iBest] = min(sdev);
     rhoT = cfg.Rtune;
     if isempty(rhoT), rhoT = cfg.rhoSweep(iBest); end
-    fprintf('\n4.3  R sweep on experiment %s (std of KF1 - flight state, deg):\n', flight);
+    fprintf('\n4.3  R sweep on experiment %s (std of KF1 - flight state, deg) and in simulation (rms of KF1 - true, deg):\n', flight);
     for i = 1:numel(cfg.rhoSweep)
-        fprintf('     rho = %8.3g  L = %7.3f rad/s  std(err) = %.3f  std in hover C = %.3f\n', ...
-            cfg.rhoSweep(i), sqrt(Q/(cfg.rhoSweep(i)*Rm)), rad2deg(sdev(i)), rad2deg(snoise(i)));
+        fprintf('     rho = %8.3g  L = %7.3f rad/s  std(err) = %.3f  std in hover C = %.3f  rms sim = %.3f\n', ...
+            cfg.rhoSweep(i), sqrt(Q/(cfg.rhoSweep(i)*Rm)), rad2deg(sdev(i)), rad2deg(snoise(i)), rad2deg(ssim(i)));
     end
+    [~, iSim] = min(ssim);
+    fprintf('     best rho in simulation = %.3g\n', cfg.rhoSweep(iSim));
     fprintf('     tuned: rho = %.3g (R x %.3g), L = %.3f rad/s\n', rhoT, rhoT, sqrt(Q/(rhoT*Rm)));
 
     f = figure('Name', ['4.3 QR ' axisName], 'Position', [50 50 1000 420]);
@@ -156,9 +205,9 @@ function R = axis_study(axisName, EX, cfg, figdir)
     grid on; xlabel('\omega [rad/s]'); ylabel('|F_m| [dB]'); legend('Location', 'southwest');
     title('4.3 Inclinometer path F_m(s) vs Q/R');
     subplot(1,2,2);
-    loglog(cfg.rhoSweep, rad2deg(sdev), 'o-', cfg.rhoSweep, rad2deg(snoise), 's-');
-    grid on; xlabel('\rho  (R \rightarrow \rho R)'); ylabel('std [deg]');
-    legend(['std(KF1 - flight state), exp. ' flight], 'std(KF1) in hover C', 'Location', 'best');
+    loglog(cfg.rhoSweep, rad2deg(sdev), 'o-', cfg.rhoSweep, rad2deg(snoise), 's-', cfg.rhoSweep, rad2deg(ssim), 'd-');
+    grid on; xlabel('\rho  (R \rightarrow \rho R)'); ylabel('error measure [deg]');
+    legend(['std(KF1 - flight state), exp. ' flight], 'std(KF1) in hover C', 'rms(KF1 - true), simulation', 'Location', 'northoutside');
     title('4.3 Sweep of R');
     save_fig(f, figdir, ['4_3_QR_' axisName]);
 
@@ -192,38 +241,87 @@ function R = axis_study(axisName, EX, cfg, figdir)
     kf2t = design_kf(Q, rhoT*Rm, Qb);
     fprintf('     KF2 tuned: R x %.3g, qb = %g\n', rhoT, cfg.qb);
 
-    % Artificial bias added to the measured gyro of the flight experiment,
-    % sweep of qb (tuned R). The real bias is small, so b_hat should go to
-    % about cfg.bArt; KF1 should keep an offset b/L.
-    u0 = EF.gyro(:,gi);  y = EF.([ang '_m']);  ua = u0 + cfg.bArt;
-    lateW = EF.win & EF.t > EF.t(find(EF.win,1)) + 10;
-    t1a = run_kf(kf1t, EF.t, ua, y);
-    fprintf('     experiment %s + artificial bias %.3f rad/s:\n', flight, cfg.bArt);
-    fprintf('       KF1 tuned shift = %.2f deg (b/L = %.2f deg)\n', ...
-        rad2deg(mean(t1a(lateW) - th1t(lateW))), rad2deg(cfg.bArt/kf1t.L));
+    % Simulation phase: artificial bias on the simulated gyro, nominal R,
+    % sweep of qb to guide the tuning (b vs b_hat). KF1 should keep an offset
+    % b/L and KF2 should remove it.
+    Sb = simulate_truth(cfg.model.(axisName), Ts, sg, sm, cfg.bArt);
+    wsb = Sb.t >= cfg.tSettle;  late = Sb.t >= cfg.tLate;
+    t1b = run_kf(kf1, Sb.t, Sb.wm, Sb.ym);
+    fprintf('     simulation with artificial bias %.3f rad/s (%.2f deg/s):\n', cfg.bArt, rad2deg(cfg.bArt));
+    fprintf('       KF1 nominal: mean error = %.3f deg (b/L = %.3f deg)\n', ...
+        rad2deg(mean(t1b(late) - Sb.ang(late))), rad2deg(cfg.bArt/kf1.L));
 
-    f = figure('Name', ['4.4 ' axisName], 'Position', [50 50 1000 750]);
-    subplot(2,1,1);
-    plot(EF.t, rad2deg(cfg.bArt)*ones(size(EF.t)), 'k', 'LineWidth', 1.5, 'DisplayName', 'added bias'); hold on;
+    f = figure('Name', ['4.4 sim ' axisName], 'Position', [50 50 1000 800]);
+    subplot(3,1,1);
+    plot(Sb.t, rad2deg(Sb.b)*ones(size(Sb.t)), 'k', 'LineWidth', 1.5, 'DisplayName', 'true (artificial) bias'); hold on;
+    for qb = cfg.qbSweep
+        k = design_kf(Q, Rm, qb^2);
+        [th, bh] = run_kf(k, Sb.t, Sb.wm, Sb.ym);
+        plot(Sb.t, rad2deg(bh), 'DisplayName', sprintf('b_{hat}, q_b = %g', qb));
+        fprintf('       KF2 qb = %-7g bias time const = %6.2f s  rms(KF2 - true) = %.3f deg  b_hat mean = %.3f deg/s  std = %.3f deg/s (t >= %g s)\n', ...
+            qb, 1/min(abs(eig(k.A - k.L*k.C))), rad2deg(rms(th(wsb) - Sb.ang(wsb))), ...
+            rad2deg(mean(bh(late))), rad2deg(std(bh(late))), cfg.tLate);
+    end
+    grid on; ylabel(['b_' rate ' [deg/s]']); legend('Location', 'southeast');
+    title(['4.4 Simulation, artificial gyro bias ' num2str(rad2deg(cfg.bArt), 3) ' deg/s, ' axisName]);
+    kf2s = design_kf(Q, Rm, cfg.qbSim^2);
+    t2b = run_kf(kf2s, Sb.t, Sb.wm, Sb.ym);
+    fprintf('       KF2 qb = %g: mean error = %.3f deg, rms(KF1 - true) = %.3f deg, rms(KF2 - true) = %.3f deg (t >= %g s)\n', ...
+        cfg.qbSim, rad2deg(mean(t2b(late) - Sb.ang(late))), rad2deg(rms(t1b(late) - Sb.ang(late))), ...
+        rad2deg(rms(t2b(late) - Sb.ang(late))), cfg.tLate);
+    subplot(3,1,2);
+    plot(Sb.t, rad2deg(Sb.ym), 'Color', [0.75 0.75 0.75]); hold on;
+    plot(Sb.t, rad2deg(Sb.ang), 'k', 'LineWidth', 1.5);
+    plot(Sb.t, rad2deg(t1b), 'r', Sb.t, rad2deg(t2b), 'b');
+    grid on; ylabel([sym ' [deg]']);
+    legend('measurement (inclinometer)', 'true state', 'KF1 (no bias state)', ...
+        sprintf('KF2 (q_b = %g)', cfg.qbSim), 'Location', 'best');
+    subplot(3,1,3);
+    plot(Sb.t, rad2deg(t1b - Sb.ang), 'r', Sb.t, rad2deg(t2b - Sb.ang), 'b');
+    grid on; ylabel('error [deg]'); xlabel('t [s]'); legend('KF1', 'KF2', 'Location', 'best');
+    save_fig(f, figdir, ['4_4_sim_' axisName]);
+
+    % On the flight data the bias is the sensor's own. Its reference is the slope
+    % of (integrated gyro - flight state), compared at rest (experiment A,
+    % where the true rate is zero) and in the flight experiment. KF1 cannot
+    % remove this bias and should keep an offset b/L against KF2.
+    EA = EX(strcmp({EX.name}, 'A'));
+    y = EF.([ang '_m']);
+    bRefA = bias_reference(EA, gi, ang);  bRefF = bias_reference(EF, gi, ang);
+    t2t = run_kf(kf2t, EF.t, EF.gyro(:,gi), y);
+    iA = find(EA.win, 1, 'last');  iF = find(EF.win, 1, 'last');
+    fprintf('     sensor bias reference: exp. A %.4f deg/s (mean gyro at rest %.4f), exp. %s %.4f deg/s\n', ...
+        rad2deg(bRefA), rad2deg(mean(EA.gyro(EA.win,gi))), flight, rad2deg(bRefF));
+    fprintf('     exp. %s: bias/L of KF1 tuned = %.3f deg, mean(KF1 tuned - KF2 tuned) = %.3f deg\n', ...
+        flight, rad2deg(bRefF/kf1t.L), rad2deg(mean(th1t(EF.win) - t2t(EF.win))));
+
+    f = figure('Name', ['4.4 ' axisName], 'Position', [50 50 1000 850]);
+    sA = subplot(3,1,1);  sF = subplot(3,1,2);
+    plot(sA, EA.t, rad2deg(bRefA)*ones(size(EA.t)), 'k', 'LineWidth', 1.5, 'DisplayName', 'sensor bias (reference)');
+    hold(sA, 'on');
+    plot(sF, EF.t, rad2deg(bRefF)*ones(size(EF.t)), 'k', 'LineWidth', 1.5, 'DisplayName', 'sensor bias (reference)');
+    hold(sF, 'on');
     for qb = cfg.qbSweep
         k = design_kf(Q, rhoT*Rm, qb^2);
-        [th, ~] = run_kf(k, EF.t, u0, y);
-        [tha, bha] = run_kf(k, EF.t, ua, y);
-        plot(EF.t, rad2deg(bha), 'DisplayName', sprintf('b_{hat}, q_b = %g', qb));
-        fprintf('       KF2 qb = %-7g bias time const = %6.2f s  std(KF2 - flight) = %.3f deg  angle shift = %.2f deg\n', ...
+        [~, bA] = run_kf(k, EA.t, EA.gyro(:,gi), EA.([ang '_m']));
+        [th, bF] = run_kf(k, EF.t, EF.gyro(:,gi), y);
+        plot(sA, EA.t, rad2deg(bA), 'DisplayName', sprintf('b_{hat}, q_b = %g', qb));
+        plot(sF, EF.t, rad2deg(bF), 'DisplayName', sprintf('b_{hat}, q_b = %g', qb));
+        fprintf('       KF2 qb = %-7g bias time const = %6.2f s  std(KF2 - flight) = %.3f deg  b_hat end: A %.4f, %s %.4f deg/s\n', ...
             qb, 1/min(abs(eig(k.A - k.L*k.C))), rad2deg(std(th(EF.win) - ref(EF.win))), ...
-            rad2deg(mean(tha(lateW) - th(lateW))));
+            rad2deg(bA(iA)), flight, rad2deg(bF(iF)));
     end
-    xlim([EF.t(1) xl(2)]); grid on; ylabel(['b_' rate ' [deg/s]']); legend('Location', 'southeast');
-    title(['4.4 Experiment ' flight ' + artificial gyro bias ' num2str(rad2deg(cfg.bArt), 3) ' deg/s']);
-    [t2a, ~] = run_kf(kf2t, EF.t, ua, y);
-    subplot(2,1,2);
+    xlim(sA, EA.t([1 iA])); grid(sA, 'on'); ylabel(sA, ['b_' rate ' [deg/s]']); legend(sA, 'Location', 'best');
+    title(sA, ['4.4 Sensor bias, experiment A (at rest), ' axisName]);
+    xlim(sF, [EF.t(1) xl(2)]); grid(sF, 'on'); ylabel(sF, ['b_' rate ' [deg/s]']); legend(sF, 'Location', 'best');
+    title(sF, ['4.4 Sensor bias, experiment ' flight]);
+    subplot(3,1,3);
     plot(EF.t, rad2deg(y), 'Color', [0.75 0.75 0.75]); hold on;
     plot(EF.t, rad2deg(ref), 'k', 'LineWidth', 1.5);
-    plot(EF.t, rad2deg(t1a), 'r', EF.t, rad2deg(t2a), 'b');
+    plot(EF.t, rad2deg(th1t), 'r', EF.t, rad2deg(t2t), 'b');
     xlim(xl); grid on; ylabel([sym ' [deg]']); xlabel('t [s]');
-    legend('measurement (inclinometer)', 'flight state (onboard)', 'KF1 tuned (biased gyro)', ...
-        sprintf('KF2 tuned (biased gyro, q_b = %g)', cfg.qb), 'Location', 'best');
+    legend('measurement (inclinometer)', 'flight state (onboard)', 'KF1 tuned', ...
+        sprintf('KF2 tuned (q_b = %g)', cfg.qb), 'Location', 'best');
     save_fig(f, figdir, ['4_4_exp' flight '_' axisName]);
 
     %% 4.5 Complementarity check: F_m + s F_w = 1
@@ -249,7 +347,7 @@ function R = axis_study(axisName, EX, cfg, figdir)
     %% 4.6 Evaluation on experiments A - E
     fprintf('\n4.6  Experiments (deg). offset = mean(est - flight state), std = std(est - flight state)\n');
     fprintf('     %-3s | %-15s | %-15s | %-15s | %-15s | %-15s | %s\n', 'exp', 'inclinometer', ...
-        'gyro integ.', 'KF1 nominal', 'KF1 tuned', 'KF2 tuned', 'b_hat [deg/s]');
+        'gyro integ.', 'KF1 nominal', 'KF1 tuned', 'KF2 tuned', 'b_hat at window end [deg/s]');
     filters = {'incl', 'gyro', 'kf1', 'kf1t', 'kf2t'};
     for e = 1:numel(EX)
         X = EX(e);  wv = X.win;  u = X.gyro(:,gi);  y = X.([ang '_m']);  ob = X.([ang '_ob']);
@@ -265,8 +363,10 @@ function R = axis_study(axisName, EX, cfg, figdir)
             R.exp.(X.name).(filters{j}) = [mean(d) std(d)];
             fprintf(' %6.2f / %6.3f |', rad2deg(mean(d)), rad2deg(std(d)));
         end
-        R.exp.(X.name).bhat = mean(bh(wv));
-        fprintf(' %6.3f (gyro mean %6.3f)\n', rad2deg(mean(bh(wv))), rad2deg(mean(u(wv))));
+        bRef = bias_reference(X, gi, ang);
+        R.exp.(X.name).bhat = bh(find(wv, 1, 'last'));
+        R.exp.(X.name).bref = bRef;
+        fprintf(' %6.3f (reference %6.3f)\n', rad2deg(R.exp.(X.name).bhat), rad2deg(bRef));
         R.est.(X.name) = est;  R.est.(X.name).bhat = bh;
     end
 
@@ -290,7 +390,7 @@ function R = axis_study(axisName, EX, cfg, figdir)
     end
 
     R.kf1 = kf1;  R.kf1t = kf1t;  R.kf2 = kf2;  R.kf2t = kf2t;  R.rhoT = rhoT;
-    R.sweep = struct('rho', cfg.rhoSweep, 'std_err', sdev, 'std_hover', snoise);
+    R.sweep = struct('rho', cfg.rhoSweep, 'std_err', sdev, 'std_hover', snoise, 'rms_sim', ssim);
     R.sigma = [sg sm];
 end
 
@@ -334,6 +434,47 @@ function [ang, b] = run_kf(kf, t, u, y)
     if size(out,2) > 2, b = out(:,3); else, b = zeros(size(ang)); end
 end
 
+function S = simulate_truth(G, Ts, sg, sm, b)
+% Simulated experiment with known truth: the closed-loop attitude model G is
+% driven by reference steps (as in experiment D) and gives the true angle and
+% its exact rate. The sensors add white noise with the hover standard
+% deviations, and the gyro also the bias b:
+%   w_m = rate + b + n_g,   angle_m = angle + n_m
+    t = (0:Ts:60)';
+    r = 0.2*(t >= 10 & t < 15) - 0.2*(t >= 15 & t < 20) ...
+      + 0.1*(t >= 30 & t < 35) - 0.1*(t >= 45 & t < 50);
+    x = lsim(ss(G.A, G.B, eye(size(G.A)), 0), r, t, 'zoh');
+    S.t = t;
+    S.ang = x*G.C';
+    S.rate = x*(G.C*G.A)' + r*(G.C*G.B);
+    rng(1);
+    S.wm = S.rate + b + sg*randn(size(t));
+    S.ym = S.ang + sm*randn(size(t));
+    S.b = b;
+end
+
+function b = bias_reference(X, gi, ang)
+% Gyro bias from the data: the measured rate is rate + b, so integrated gyro
+% minus flight state grows with slope b over the evaluation window.
+    gint = cumtrapz(X.t, X.gyro(:,gi));
+    p = polyfit(X.t(X.win), gint(X.win) - X.([ang '_ob'])(X.win), 1);
+    b = p(1);
+end
+
+function [theta_m, phi_m] = inclinometer(acc, g, theta, phi)
+% Raw pitch and roll from the accelerometers. With no angles given the
+% formulas use the accelerometers only; otherwise each axis uses the angle
+% of the other axis:
+%   ax/(-az) = tan(theta)/cos(phi),   -ay = g sin(phi) cos(theta)
+    if nargin < 3
+        theta_m = asin(max(min(acc(:,1)/g, 1), -1));
+        phi_m   = atan2(-acc(:,2), -acc(:,3));
+    else
+        theta_m = atan2(acc(:,1).*cos(phi), -acc(:,3));
+        phi_m   = asin(max(min(-acc(:,2)./(g*cos(theta)), 1), -1));
+    end
+end
+
 function X = load_experiment(name, file, win, cfg)
 % Decoded sensors, raw inclinometer (Section 3.4) and the onboard attitude
 % interpolated on the navdata time.
@@ -343,10 +484,9 @@ function X = load_experiment(name, file, win, cfg)
     st = interp1(S.states.time(:), double(S.states.signals.values), m.t, 'linear', 'extrap');
     X.t = m.t(1) + (0:numel(m.t)-1)'*cfg.Ts;   % uniform grid for lsim (dt is exactly Ts)
     X.gyro = m.gyro;
-    % Specific force at rest is -g along z_B (sensor reads az ~ -g), so
-    % a = g [sin(theta), -sin(phi)cos(theta), -cos(phi)cos(theta)]
-    X.theta_m = asin(max(min(m.acc(:,1)/cfg.g, 1), -1));
-    X.phi_m   = atan2(-m.acc(:,2), -m.acc(:,3));
+    X.acc = m.acc;
+    % Specific force at rest is -g along z_B (sensor reads az ~ -g)
+    [X.theta_m, X.phi_m] = inclinometer(m.acc, cfg.g);
     X.phi_ob   = st(:,1);
     X.theta_ob = st(:,2);
     X.win = X.t >= win(1) & X.t <= win(2);
