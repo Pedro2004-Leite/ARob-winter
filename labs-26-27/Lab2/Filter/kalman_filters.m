@@ -82,6 +82,8 @@ for e = 1:numel(EX)
         rad2deg(std(EX(e).gyro(w,1))), rad2deg(std(EX(e).gyro(w,2))), ...
         rad2deg(std(EX(e).phi_m(w))),  rad2deg(std(EX(e).theta_m(w))));
 end
+EA0 = EX(strcmp({EX.name}, 'A'));
+fprintf('Mean |a|/g at rest (experiment A) = %.3f\n', mean(vecnorm(EA0.acc(EA0.win,:), 2, 2))/cfg.g);
 fprintf('Q and R are taken from experiment %s.\n\n', cfg.noise);
 
 %% Pitch (4.1 - 4.6) and roll (4.7)
@@ -463,11 +465,13 @@ end
 
 function [theta_m, phi_m] = inclinometer(acc, g, theta, phi)
 % Raw pitch and roll from the accelerometers. With no angles given the
-% formulas use the accelerometers only; otherwise each axis uses the angle
+% formulas use the accelerometers only: since sqrt(ay^2 + az^2) = g cos(theta),
+% the pitch does not depend on the magnitude read by the sensor (the same
+% inversion as asin(ax/|a|) in Section 5). Otherwise each axis uses the angle
 % of the other axis:
 %   ax/(-az) = tan(theta)/cos(phi),   -ay = g sin(phi) cos(theta)
     if nargin < 3
-        theta_m = asin(max(min(acc(:,1)/g, 1), -1));
+        theta_m = atan2(acc(:,1), sqrt(acc(:,2).^2 + acc(:,3).^2));
         phi_m   = atan2(-acc(:,2), -acc(:,3));
     else
         theta_m = atan2(acc(:,1).*cos(phi), -acc(:,3));
