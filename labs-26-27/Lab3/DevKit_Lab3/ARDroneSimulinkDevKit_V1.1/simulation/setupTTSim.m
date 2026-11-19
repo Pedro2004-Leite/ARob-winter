@@ -17,7 +17,9 @@ clc
 
 %%
 % Adding ARDrone library path 
-addpath ../lib; 
+addpath ../lib;
+% tt_config, desired_trajectory_self, tt_controller_self
+addpath ../functions;
 %% Simulation parameters
 
 % Flight management system sample time. This is the sample time at which

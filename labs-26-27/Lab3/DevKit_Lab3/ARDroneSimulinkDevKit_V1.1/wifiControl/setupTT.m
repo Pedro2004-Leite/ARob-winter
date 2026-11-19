@@ -31,7 +31,9 @@ clear all;
 close all; 
 
 %% Adding ARDrone library to the path
-addpath ../lib/ ; 
+addpath ../lib/ ;
+% tt_config, desired_trajectory_self, tt_controller_self
+addpath ../functions/ ;
 
 %%
 %  Sample time of Simulink model. 
