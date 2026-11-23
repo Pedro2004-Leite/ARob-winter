@@ -24,7 +24,7 @@ function cfg = tt_config()
 %   compatible with code generation (MATLAB Function blocks).
 %#codegen
 
-EXPERIMENT = 4;   % <-- select the experiment here
+EXPERIMENT = 0;   % <-- select the experiment here (0 = hover, first flight)
 
 % ---------------------------------------------------------------------
 % Codes (do not change)
@@ -64,7 +64,9 @@ traj.los_length = Inf;    % [m] along-track length, then stop (Inf = never)
 % ======================= controller =================================
 % LQR on the error system  x~ = [p~; v~],  x~' = A x~ + B u,  u = -K x~
 % with Q = blkdiag(q_p I, q_v I) and weight rho on the input.
-ctrl.q_p   = 1.0;
+% First-flight (conservative) set from the simulation sweep:
+% q_p = 0.25, k_z = 0.5, k_psi = 1.0, ki_psi = 0.33 (defaults were 1, 1, 1.5, 0.5).
+ctrl.q_p   = 0.25;
 ctrl.q_v   = 1.0;
 ctrl.rho   = 1.0;
 ctrl.g     = 9.81;     % [m/s^2]
@@ -75,9 +77,9 @@ ctrl.w_max = 2.0;      % [m/s^2] bound on each component of w^ (anti-windup)
 
 ctrl.max_tilt = 0.20;  % [rad] bound on the roll and pitch references
 
-ctrl.k_z      = 1.0;   % vertical channel  w_r = -k_z (h - h_d)  [1/s]
-ctrl.k_psi    = 1.5;   % yaw PI: dot_psi_r = -k_psi psi_e - ki_psi int(psi_e)
-ctrl.ki_psi   = 0.5;
+ctrl.k_z      = 0.5;   % vertical channel  w_r = -k_z (h - h_d)  [1/s]
+ctrl.k_psi    = 1.0;   % yaw PI: dot_psi_r = -k_psi psi_e - ki_psi int(psi_e)
+ctrl.ki_psi   = 0.33;
 
 % Conversion from physical references to the normalised AR.Drone inputs
 % [-1, 1]. Values = static gains of the identified models in lib/
