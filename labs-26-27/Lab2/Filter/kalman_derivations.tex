@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.2em}
+
+\begin{document}
+
+\textbf{4.1}
+
+\begin{align*}
+w_{y_m} &= q + n_g, \qquad \dot\theta \approx q
+\quad\Rightarrow\quad \dot\theta = w_{y_m} - n_g\\
+\theta_m &= \theta + n_\theta\\
+Q &= E[n_g^2], \qquad R = E[n_\theta^2]\\[1ex]
+A &= 0,\quad B = 1,\quad G = -1,\quad C = 1\\
+0 &= AP + PA^T - PC^TR^{-1}CP + GQG^T = -\frac{P^2}{R} + Q\\
+P &= \sqrt{QR}\\
+K &= PC^TR^{-1} = \sqrt{Q/R}\\
+\dot{\hat\theta} &= w_{y_m} + K(\theta_m - \hat\theta)
+\end{align*}
+
+\textbf{4.2}
+
+\begin{align*}
+s\hat\Theta &= W_{y_m} + K(\Theta_m - \hat\Theta)\\
+\hat\Theta &= \frac{K}{s+K}\,\Theta_m + \frac{1}{s+K}\,W_{y_m}\\[1ex]
+\frac{\hat\Theta}{\Theta_m} &= \frac{K}{s+K}
+\qquad
+\frac{\hat\Theta}{W_{y_m}} = \frac{1}{s+K} = \frac{1}{s}\cdot\frac{s}{s+K}
+\end{align*}
+
+\textbf{4.3}
+
+\begin{align*}
+K &= \sqrt{Q/R}, \qquad P = \sqrt{QR}\\
+\frac{\partial K}{\partial Q} &= \frac{1}{2\sqrt{QR}} > 0, \qquad
+\frac{\partial K}{\partial R} = -\frac{1}{2R}\sqrt{\frac{Q}{R}} < 0\\
+(Q,R) &\to (\alpha Q,\alpha R) \;\Rightarrow\; K \to K, \quad P \to \alpha P
+\end{align*}
+
+\textbf{4.4}
+
+\begin{align*}
+w_{y_m} &= q + b_y + n_g \quad\Rightarrow\quad \dot\theta = w_{y_m} - b_y - n_g\\
+\dot b_y &= n_b, \qquad Q_b = E[n_b^2]\\[1ex]
+x &= \begin{bmatrix}\theta\\ b_y\end{bmatrix},\quad
+A = \begin{bmatrix}0&-1\\0&0\end{bmatrix},\quad
+B = \begin{bmatrix}1\\0\end{bmatrix},\quad
+G = \begin{bmatrix}-1&0\\0&1\end{bmatrix},\quad
+C = \begin{bmatrix}1&0\end{bmatrix}\\
+Q_{\rm tot} &= \mathrm{diag}(Q,\,Q_b)\\[1ex]
+P &= \begin{bmatrix}p_1&p_{12}\\p_{12}&p_2\end{bmatrix}\\
+0 &= AP + PA^T - \tfrac1R PC^TCP + GQ_{\rm tot}G^T\\
+(1,1):\quad 0 &= -2p_{12} - \frac{p_1^2}{R} + Q\\
+(1,2):\quad 0 &= -p_2 - \frac{p_1p_{12}}{R}\\
+(2,2):\quad 0 &= -\frac{p_{12}^2}{R} + Q_b\\[1ex]
+p_{12} &= -\sqrt{Q_bR}\\
+p_1 &= \sqrt{RQ + 2R\sqrt{Q_bR}}\\
+p_2 &= p_1\sqrt{Q_b/R}\\[1ex]
+K &= PC^TR^{-1} = \begin{bmatrix}k_1\\k_2\end{bmatrix},\quad
+k_1 = \sqrt{\frac{Q}{R} + 2\sqrt{\frac{Q_b}{R}}},\quad
+k_2 = -\sqrt{\frac{Q_b}{R}}\\[1ex]
+\dot{\hat\theta} &= w_{y_m} - \hat b_y + k_1(\theta_m - \hat\theta)\\
+\dot{\hat b}_y &= k_2(\theta_m - \hat\theta)\\[1ex]
+\hat B_y &= \frac{k_2}{s}(\Theta_m - \hat\Theta)\\
+s\hat\Theta &= W_{y_m} - \hat B_y + k_1(\Theta_m - \hat\Theta)
+= W_{y_m} + \Big(k_1 - \frac{k_2}{s}\Big)(\Theta_m - \hat\Theta)\\
+\hat\Theta &= \frac{k_1 s - k_2}{s^2 + k_1 s - k_2}\,\Theta_m
++ \frac{s}{s^2 + k_1 s - k_2}\,W_{y_m}
+\end{align*}
+
+\newpage
+\textbf{4.7}
+
+\begin{align*}
+\dot\phi &= p + (q\sin\phi + r\cos\phi)\tan\theta \approx p\\
+w_{x_m} &= p + b_x + n_g\\
+\phi_m &= \mathrm{atan2}(-a_y,\,-a_z) = \phi + n_\phi\\[1ex]
+\theta \to \phi,\quad w_{y_m} &\to w_{x_m},\quad b_y \to b_x,\quad \theta_m \to \phi_m\\[1ex]
+K &= \sqrt{Q/R}\\
+\dot{\hat\phi} &= w_{x_m} + K(\phi_m - \hat\phi)\\
+\frac{\hat\Phi}{\Phi_m} &= \frac{K}{s+K}, \qquad \frac{\hat\Phi}{W_{x_m}} = \frac{1}{s+K}\\[1ex]
+k_1 &= \sqrt{\frac{Q}{R} + 2\sqrt{\frac{Q_b}{R}}}, \qquad k_2 = -\sqrt{\frac{Q_b}{R}}\\
+\dot{\hat\phi} &= w_{x_m} - \hat b_x + k_1(\phi_m - \hat\phi)\\
+\dot{\hat b}_x &= k_2(\phi_m - \hat\phi)\\
+\hat\Phi &= \frac{k_1 s - k_2}{s^2 + k_1 s - k_2}\,\Phi_m
++ \frac{s}{s^2 + k_1 s - k_2}\,W_{x_m}
+\end{align*}
+
+\end{document}

@@ -1,0 +1,405 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1.6cm,top=1.6cm,bottom=1.8cm]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- colours and tags ----------
+\definecolor{slides}{RGB}{0,92,153}
+\definecolor{book}{RGB}{170,60,0}
+\definecolor{notes}{RGB}{40,120,60}
+\definecolor{devkit}{RGB}{110,40,140}
+\definecolor{rowgray}{gray}{0.95}
+
+\newcommand{\cb}{\raisebox{-0.35ex}{\Large$\square$}}
+\newcommand{\srctag}[2]{\colorbox{#1}{\textcolor{white}{\textbf{\scriptsize\,#2\,}}}}
+\newcommand{\SLIDES}{\srctag{slides}{SLIDES}}
+\newcommand{\BOOK}{\srctag{book}{BOOK}}
+\newcommand{\NOTES}{\srctag{notes}{NOTES}}
+\newcommand{\DEVKIT}{\srctag{devkit}{DEVKIT}}
+\newcommand{\LAB}{\srctag{devkit}{LAB}}
+
+\newcolumntype{C}{>{\centering\arraybackslash}p{0.6cm}}
+\newcolumntype{T}{>{\centering\arraybackslash}p{1.45cm}}
+
+% ---------- sections ----------
+\titleformat{\section}{\large\bfseries\color{slides}}{}{0pt}{}[\vspace{-0.5ex}\titlerule]
+\titlespacing*{\section}{0pt}{2.2ex}{1.2ex}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{1.8ex}{0.8ex}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5ex}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{nosep,leftmargin=1.2em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small ARob 2026/27 - Lab 3 reading plan}
+\fancyhead[R]{\small Pedro}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newtcolorbox{selfcheck}{colback=rowgray,colframe=gray!60,boxrule=0.4pt,
+  left=4pt,right=4pt,top=3pt,bottom=3pt,title={\small\bfseries Can I do this without looking?},
+  fonttitle=\small,coltitle=black,colbacktitle=gray!25}
+
+\newtcolorbox{warnbox}{colback=orange!8,colframe=orange!70!black,boxrule=0.5pt,
+  left=4pt,right=4pt,top=3pt,bottom=3pt,title={\small\bfseries Found in the materials (check before coding)},
+  fonttitle=\small,coltitle=black,colbacktitle=orange!25}
+
+\newcommand{\chk}[1]{\par\noindent\hangindent=1.6em\hangafter=1 \cb\hspace{0.6em}#1}
+
+\begin{document}
+
+{\LARGE\bfseries\color{slides} Lab 3 - Theory and DevKit reading plan}\\[0.6ex]
+{\large Motion Control of the Parrot AR.Drone (MEAer, UAVs, 2026/27)}\\[0.4ex]
+{\small Goal: arrive at the session knowing every concept behind guide Sections 2 and 3, and exactly what the two empty Simulink blocks expect. Tick each box when done.}
+
+\subsection*{How to read this sheet}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\SLIDES & A lecture deck PDF in \texttt{lectures-22-23/}. The page number is the \textbf{PDF page} of that deck (page 1 is the cover).\\[0.5ex]
+\BOOK & \texttt{reference-book/uavbook.pdf} (Beard and McLain). Two page numbers: the one \textbf{printed} on the page, and the \textbf{PDF} page (PDF = printed + 8).\\[0.5ex]
+\NOTES & A written summary PDF in \texttt{lectures-22-23/notes/} or \texttt{labs-25-26/notes/}. Not slides, not the book.\\[0.5ex]
+\DEVKIT & A file of \texttt{Lab3/DevKit\_Lab3/}. The Simulink facts in Area 6 were read directly from the \texttt{.slx} files (they are zipped XML), not taken from the 25/26 notes, which never opened them.\\[0.5ex]
+\LAB & Your own earlier lab material in \texttt{labs-26-27/Lab1/}.\\
+\end{tabularx}
+
+\subsection*{The files used}
+
+\begin{tabularx}{\textwidth}{@{}l X r@{}}
+\toprule
+Short name & File (relative to the repository root) & Pages\\
+\midrule
+Guide & \texttt{labs-26-27/Lab3/26\_27\_UAVs\_Lab3.pdf} (same as 25/26 except dates) & 5\\
+Ch2 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch2\_Quadrotor\_Modeling.pdf} & 30\\
+Ch3 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch3\_Quadrotor\_Control\_Intro.pdf} & 44\\
+Ch4 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch4\_Modern\_Control\_Design.pdf} & 43\\
+Ch7 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch7\_Intro\_Nonlinear\_Control.pdf} (Lyapunov, LaSalle) & 46\\
+Ch7-II deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch7\_Intro\_Nonlinear\_Control\_Part\_II.pdf} (adaptive, tracking) & 42\\
+Ch8 deck & \texttt{lectures-22-23/22\_23\_UAVs\_Ch8\_Path\_Following.pdf} & 19\\
+Book & \texttt{reference-book/uavbook.pdf} & 401\\
+Notes & \texttt{lectures-22-23/notes/02-control.pdf}, \texttt{04-guidance-nonlinear.pdf}; \texttt{labs-25-26/notes/03-lab3.pdf} & 9, 9, 7\\
+DevKit & \texttt{Lab3/DevKit\_Lab3/ARDroneSimulinkDevKit\_V1.1/} (\texttt{start\_here\_CTRL.m}, \texttt{simulation/ARDroneTTSim.slx}, \texttt{wifiControl/ARDroneTT.slx}) & -\\
+Lab 1 report & \texttt{labs-26-27/Lab1/report/} (your solutions, notably \texttt{q2.8.tex}, \texttt{q4.2.tex}) & -\\
+\bottomrule
+\end{tabularx}
+
+\vspace{0.5ex}
+There are no recorded video lectures in the repository.
+The 25/26 notes say the Lab 3 devkit \texttt{guide.pdf} does not mention trajectory tracking at all, and that is right: the guide PDF in the devkit is the generic 2013 one, so the handout and this sheet are the only documentation.
+
+% =====================================================================
+\section*{Map: guide questions $\rightarrow$ areas}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+Guide question & Area to read first\\
+\midrule
+2.1 (change of coordinates, $T$, $\theta_r$, $\phi_r$ from $u^*$) & Areas 0 and 1\\
+2.2 (error system, input transformation, LQR gain) & Areas 1 and 2\\
+2.3 (Lyapunov function $V_1$, $\dot V_1=-\tilde x^T Q^*\tilde x$) & Areas 2 and 3\\
+2.4, 2.5 (disturbance, adaptation law) & Area 4\\
+2.6 (global asymptotic stability of the augmented system) & Areas 3 and 4\\
+2.7 (block diagram, $\bar K(s)$, link to PID) & Area 5\\
+2.8 (yaw loop with zero steady-state error) & Area 5\\
+3.1 (adapt the law to the DevKit inputs) & Areas 1 and 6\\
+3.2, 3.3 (straight line, tuning) & Areas 6 and 7\\
+3.4, 3.5, 3.6 (circle, yaw towards the centre) & Areas 6 and 7\\
+3.7 (line-of-sight path following) & Area 8\\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Area 0 - Prerequisites (skim, about 45 min)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch1 deck: Euler angles and $R=R_z(\psi)R_y(\theta)R_x(\phi)$ (the convention used by \texttt{euler2R.m}, checked entry by entry) & skim\\
+\cb & \SLIDES & Ch2 deck: quadrotor dynamic model & 15 to 18\\
+\cb & \SLIDES & Ch2 deck: the quadrotor as a flat system (why $p_d,\dot p_d,\ddot p_d$ and $\psi_d$ are enough to define the motion) & 19 to 21\\
+\cb & \LAB & \texttt{Lab1/report/q2.8.tex}: $G_y=\tfrac{g}{s^2}G_\phi$ and $G_x=-\tfrac{g}{s^2}G_\theta$, why the horizontal channels are harder, and why an outer loop must rotate by $\psi$ & whole file\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Which way is $z$ pointing in the course (NED), and what sign does a small pitch give for the $x$ acceleration?}
+\chk{Why can a quadrotor only accelerate horizontally by tilting, and what does that imply for the cascade structure?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 1 - Virtual input and cascade structure \hfill\normalfont\small (guide 2.1, 2.2, 3.1)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch3 deck: equations of motion (3 to 4), control objective (5), hierarchical or cascade control with the virtual input $u_T$, thrust magnitude and direction $r_{3d}$ (6 to 9) & 3 to 9\\
+\cb & \SLIDES & Ch3 deck: position controller, error system and PD law (10 to 13) & 10 to 13\\
+\cb & \SLIDES & Ch3 deck: attitude reference from $r_{3d}$ and $\psi$, via $[\cos\phi_d\sin\theta_d,\,-\sin\phi_d,\,\cos\phi_d\cos\theta_d]^T=R_z(-\psi)r_{3d}$ & 31 to 36\\
+\cb & \SLIDES & Ch7-II deck: same decomposition for nonlinear tracking, $T_d=m\|u_T\|$, $r_{3d}=u_T/\|u_T\|$, and the full desired rotation matrix & 23 to 26 and 30 to 35\\
+\cb & \NOTES & \texttt{02-control.pdf}: ``Control objective and hierarchical structure'' and ``Position controller design'' & Ch3 part\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Starting from $\ddot p=ge_3-\tfrac{T}{m}Re_3$, write $u^*$ so that $\ddot p=ge_3-R_z(\psi)u^*$, and invert it for $T,\theta_r,\phi_r$.}
+\chk{Why does the yaw rotation $R_z(\psi)$ drop out of the roll and pitch references once you rotate by $R_z(-\psi)$?}
+\chk{What does ``the inner loop is 5 to 10 times faster'' justify in the design, and where does the guide use it?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 2 - LQR on the error system \hfill\normalfont\small (guide 2.2, 2.3, 3.3)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch4 deck: optimal control, Riccati equation, $K=R^{-1}B^TP$, cost $x^T(0)Px(0)$ & 26\\
+\cb & \SLIDES & Ch4 deck: LQR design example, effect of the weights, Bryson's rule & 31 to 40\\
+\cb & \BOOK & Chapter 6 ``Autopilot Design'', section 6.3 LQR Control & printed 115 to 117; PDF 123 to 125\\
+\cb & \SLIDES & Ch4 deck: state-space, controllability, pole placement (so you can say what $(A,B)$ of the error system is) & 3 to 30\\
+\cb & \NOTES & \texttt{02-control.pdf}: ``Optimal control: LQR'' and ``Tuning Q/R, Bryson's rule'' & Ch4 part\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Write $A,B$ of $\dot{\tilde x}=A\tilde x+Bu$ for the three axes, and say what the guide's cost $\int \tilde x^TQ\tilde x+\rho\|u\|^2$ means for $R$ in the slides.}
+\chk{Show the closed-loop matrix $A-BK$ is Hurwitz without computing eigenvalues, using the theorem on slide 26.}
+\chk{What does decreasing $\rho$ do to speed and to actuation, and which of the two limits you in the simulator?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 3 - Lyapunov and LaSalle \hfill\normalfont\small (guide 2.3, 2.6)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch7 deck: stability definitions and Lyapunov's theorem & 14 to 22\\
+\cb & \SLIDES & Ch7 deck: Krasovskii-LaSalle invariance principle, with the damped pendulum example & 23 to 31\\
+\cb & \SLIDES & Ch7 deck: Lyapunov equation for linear systems, $A^TP+PA=-Q$ & 32 and 38 to 40\\
+\cb & \SLIDES & Ch7-II deck: PD tracking proved GAS with LaSalle, and the choice of a different proportional gain & 27 to 29\\
+\cb & \NOTES & \texttt{04-guidance-nonlinear.pdf}: ``Lyapunov's stability theorem'' and ``Krasovskii-LaSalle'' & Ch7 part I\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{State what $\dot V\le 0$ gives, what $\dot V<0$ gives, and what you must add for the result to be global.}
+\chk{When $\dot V$ is only negative semi-definite, which two things must you check to use LaSalle?}
+\chk{Expand $\dot V_1$ for $V_1=\tilde x^TP\tilde x$ along $\dot{\tilde x}=(A-BK)\tilde x$ and use the Riccati equation. What is $Q^*$ in terms of $Q$, $P$, $B$, $\rho$?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 4 - Adaptive disturbance rejection \hfill\normalfont\small (guide 2.4, 2.5, 2.6)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch7-II deck: Lyapunov analysis and adaptive control. The pattern is $V_2=V+\tfrac{1}{k_\theta}\tilde\theta^2$, then choose $\dot{\hat\theta}$ to cancel the cross term (14 to 15). Worked scalar example $\dot x=\theta x+u$ (16 to 18) & 14 to 18\\
+\cb & \SLIDES & Ch7-II deck: backstepping, which rederives the PD law with a Lyapunov certificate (optional, context for why the law has the form it has) & 19 to 22\\
+\cb & \NOTES & \texttt{04-guidance-nonlinear.pdf}: ``Lyapunov analysis and adaptive control'' & Ch7 part II\\
+\cb & \NOTES & \texttt{labs-25-26/notes/03-lab3.pdf}: how the notes map 2.4 to 2.6 onto the pattern & Sec. 1\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Show that with $u^*=R_z(-\psi)(K\tilde x+ge_3+\hat w-\ddot p_d)$ the error dynamics become $\dot{\tilde x}=(A-BK)\tilde x+B\tilde w$.}
+\chk{Why is $\dot{\tilde w}=-\dot{\hat w}$, and where is the assumption that $w$ is constant used?}
+\chk{In the slides' scalar example the conclusion is only that $x\to 0$ and $\hat\theta$ is bounded (slides 17 and 18). Why can the lab system do better, i.e. what is different about the invariant set once $\tilde x\equiv 0$? Write the argument fully.}
+\end{selfcheck}
+Note on notation: the guide uses $k_w$ for the adaptation gain in 2.5 and again for the vertical proportional gain in 3.1.
+They are two different numbers.
+Name them differently in the report.
+
+% =====================================================================
+\section*{Area 5 - PID connection and the yaw loop \hfill\normalfont\small (guide 2.7, 2.8)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch3 deck: disturbance rejection with a PD loop (steady-state offset by the final value theorem) & 23 to 25\\
+\cb & \SLIDES & Ch3 deck: integral action, from PD to PID, with experimental result & 26 to 29\\
+\cb & \SLIDES & Ch3 deck: the unsolved exercise, wind as a velocity disturbance instead of an acceleration & 30\\
+\cb & \SLIDES & Ch3 deck: state-space version with an integrator state, pole placement & 37 to 44\\
+\cb & \NOTES & \texttt{02-control.pdf}: ``Disturbance rejection and integral action'' & Ch3 part\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{With $\hat w$ driven by $\tilde x$, what is $\hat w(t)$ as an operator on the error? Use it to get $\bar K(s)$ and name the PID gains.}
+\chk{Yaw model $\dot\psi=-a\psi+bu$ (not a pure integrator). Which controller gives zero steady-state error to a constant reference, and why does a pure P not?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 6 - The DevKit: what the two empty blocks expect \hfill\normalfont\small (guide 3.1 to 3.7)}
+
+This area has no slides.
+It is a reading of \texttt{start\_here\_CTRL.m}, \texttt{setupTTSim.m}, \texttt{setupTT.m} and the two TT models.
+Everything below was read from the files, except where marked \emph{not verified}.
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Where\\
+\midrule
+\cb & \DEVKIT & Run \texttt{start\_here\_CTRL.m}, answer \texttt{1} then \texttt{4}. It does \texttt{cd simulation; setupTTSim}, which sets \texttt{FMS.Ts=0.03}, \texttt{timeDelay=4*Ts} (0.12 s), \texttt{simDT=0.005}, loads the identified models and opens \texttt{ARDroneTTSim.slx} & scripts\\
+\cb & \DEVKIT & Open \texttt{ARDroneTTSim.slx}. Blocks \texttt{MATLAB Function1} (= \texttt{desired\_trajectory}) and \texttt{Outer-loop Controller/MATLAB Function} (= \texttt{tt\_controller}) are the two to fill. Read the template code and comments in both & model\\
+\cb & \DEVKIT & \texttt{lib/setupARModel.m}: the six identified inner-loop models (\texttt{ssRoll}, \texttt{ssRoll2V}, \texttt{ssPitch}, \texttt{ssPitch2U}, \texttt{ssYaw}, \texttt{ssH}). They are \texttt{.mat} objects: load them in MATLAB to see the poles and DC gains & lib\\
+\cb & \LAB & \texttt{Lab1/report/q4.2.tex}: your identified closed-loop pitch model & Step 4\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Interfaces of the two blocks}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+Block & Signature (from the template code)\\
+\midrule
+\texttt{desired\_trajectory} & \texttt{[pd, dot\_pd, ddot\_pd, psi\_d] = f(on\_off, states, t)}. Persistent \texttt{t0}, \texttt{p0}, \texttt{previous\_status} are already there. \texttt{dt=t-t0} and \texttt{p0} are the two variables to build the trajectory from. The yaw is set to 0 when tracking is off.\\
+\texttt{tt\_controller} & \texttt{[w\_r, dot\_psi\_r, theta\_r, phi\_r, dot\_xi] = f(states, pd, dot\_pd, ddot\_pd, psi\_d, xi)}. Already computed for you: \texttt{lambda}, \texttt{psi}, \texttt{R=euler2R(lambda)}, \texttt{Rz}, \texttt{psi\_e=normalize\_angle(psi-psi\_d)}, \texttt{p}, \texttt{dot\_p}.\\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Signal facts}
+
+\begin{tabularx}{\textwidth}{@{}l X@{}}
+\toprule
+Item & What the models say\\
+\midrule
+\texttt{states} & \texttt{states(1:3)} Euler angles (rad), \texttt{states(4:6)} body velocity $(u,v,w)$, \texttt{states(7:9)} position. Position is \emph{integrated from velocity} by the block named ``Position estimation - inaccurate''. In simulation the drift is whatever the model gives. On the real drone it is the optical-flow warning in \texttt{setupTT.m}, and this is where Lab 2 matters.\\
+Order of outputs & Top level wires the controller outputs to the drone block as: \texttt{w\_r} $\to$ input 5 (vertical speed), \texttt{dot\_psi\_r} $\to$ 4 (yaw rate), \texttt{theta\_r} $\to$ 3 (pitch), \texttt{phi\_r} $\to$ 2 (roll). Inputs 1, 6, 7 are fly, enable references, emergency stop.\\
+\texttt{xi}, \texttt{dot\_xi} & The guide never mentions them. The controller block receives a 4-vector state \texttt{xi}, fed by a \emph{Discrete-Time Integrator} of \texttt{dot\_xi}: initial value \texttt{[0;0;0;0]}, sample time \texttt{FMS.Ts}, saturation $\pm 10$, and it is \textbf{reset while \texttt{on\_off}=0}. This is where the adaptive state $\hat w$ (3 components) goes, and plausibly one more integrator for the yaw loop of 2.8. The meaning of the fourth component is my inference from the size, not documented.\\
+Controller selector & Inside \texttt{Outer-loop Controller}, \texttt{Manual Switch3} chooses between the old \emph{Baseline Controller} (hover cascade, with gains 1.5 for yaw, $-0.5$ forward, $0.4$ lateral) and the TT block. It is stored with \texttt{CurrentSetting=0}. \emph{Not verified} which input that is. Check on the diagram that the TT block is the one connected, with all outputs zero it will just sit there.\\
+Inner-loop inputs & The drone block takes references in $[-1,1]$ and saturates them at $\pm 1$. The commands are \textbf{normalized, not radians}.\\
+Real vs simulated & Both TT models contain identical copies of the two blocks. The Wi-Fi model only adds the Wi-Fi block (AT commands, packet decoding, yaw zeroed when references are enabled).\\
+\bottomrule
+\end{tabularx}
+
+\begin{warnbox}
+\textbf{1. Units of $\phi_r$, $\theta_r$, $w_r$, $\dot\psi_r$.}
+The formulas of 2.1 give angles in radians, but the block feeds normalized commands.
+Your own Lab 1 fit gives a DC gain of 0.414 from the pitch command to the pitch angle in rad (\texttt{q4.2.tex}), so a command of 1 is about 0.41 rad, and an angle reference in rad has to be divided by a factor of that order.
+The factor for the simulation block itself is \emph{not verified}: read it from \texttt{dcgain(ssPitch)} and \texttt{dcgain(ssRoll)} after \texttt{setupARModel}.
+The same question applies to $w_r$ and $\dot\psi_r$.
+The 25/26 notes also flagged this and left it open.
+\par\smallskip\textbf{2. Sign of the height.}
+The template sets \texttt{p0 = [states(7:8); -1]}, so the third component of \texttt{pd} is $-1$ (NED $z$ for 1 m height).
+But \texttt{tt\_controller} flips the sign of the measured position and velocity (\texttt{p(3)=-p(3)}, ``height is symmetric of z''), so its $p_3$ is the height, positive up.
+Decide one convention for $p_{d,3}$ and check it with a first run, otherwise the vertical error can be off by 2 m.
+\par\smallskip\textbf{3. On/off behaviour.}
+\texttt{desired\_trajectory} resets \texttt{t0} and \texttt{p0} every time tracking is switched on, and holds \texttt{p0} with $\psi_d=0$ while it is off, so any extra state you add (for example for 3.7) must be reset in the same places.
+\par\smallskip\textbf{4. Delay and sampling.}
+The simulation includes a transport delay of $4T_s=0.12$ s on the drone side and the controller runs at 0.03 s.
+Ch3 slides 14 to 22 give the tolerable delay as $\tau<PM/\omega_c$, which limits how aggressive $Q/\rho$ can be.
+\end{warnbox}
+
+\begin{selfcheck}
+\chk{Which blocks are in the signal path from \texttt{tt\_controller} outputs to the drone, and what saturates the commands?}
+\chk{Write the vector $p_d$ you would pass for hovering at 1 m, in the convention you chose, and what \texttt{p(3)} will be in the controller at that point.}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 7 - Reference trajectories \hfill\normalfont\small (guide 3.2, 3.4, 3.6)}
+
+No new theory: this is calculus, plus decisions that the guide does not fix.
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch2 deck: flat outputs, why $\dot p_d,\ddot p_d$ are needed (feed-forward $\ddot p_d$ appears in the control law) & 19 to 21\\
+\cb & \SLIDES & \texttt{ar23-ch10.pdf} (course wrap-up talk): last year's lab 3 example, circle path control with the vehicle heading towards the origin & 7\\
+\bottomrule
+\end{tabularx}
+\begin{selfcheck}
+\chk{Write $p_d,\dot p_d,\ddot p_d$ for the line (0.1 m/s) and for the circle ($R=1$ m, $\omega=0.1$ rad/s). What is the magnitude of $\ddot p_d$ on the circle, and why is it tiny?}
+\chk{The circle must start at the drone's current position. Where is its centre? The guide leaves this free, so choose and justify.}
+\chk{3.6: write $\psi_d$ so that the nose points at the centre, and its derivative. Does the position error equation in 2.4 depend on $\psi_d$ at all?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 8 - Straight-line path following and LOS \hfill\normalfont\small (guide 3.7)}
+
+\begin{tabularx}{\textwidth}{@{}C T X l@{}}
+\toprule
+\cb & Type & Source and topic & Pages\\
+\midrule
+\cb & \SLIDES & Ch8 deck: straight line description, path error $e_p$, cross-track error $e_{py}$ and its dynamics $\dot e_{py}=V_g\sin(\chi-\chi_q)$ & 5 to 7\\
+\cb & \SLIDES & Ch8 deck: vector-field law $\chi^c=\chi_q-\chi^\infty\tfrac{2}{\pi}\arctan(k_{path}e_{py})$ and tuning of $k_{path}$ & 8 to 9\\
+\cb & \SLIDES & Ch8 deck: Lyapunov proof $W=\tfrac12 e_{py}^2$ & 10 to 11\\
+\cb & \SLIDES & Ch8 deck: lookahead distance, LOS and L1 (one slide, no derivation) & 19\\
+\cb & \BOOK & Chapter 10, section 10.1 Straight-line Path Following & printed 198 to 203; PDF 206 to 211\\
+\bottomrule
+\end{tabularx}
+
+\begin{warnbox}
+The guide's formula $\psi_d=\arctan(-(y-y_d)/\Delta)$ is \textbf{not derived anywhere in the repository}.
+I searched the book text: there is no line-of-sight path-following section in it (the ``line-of-sight'' hits are about vision and proportional navigation), and the slides give it one page.
+You have to derive the geometry yourself, and the vector-field law above is the closest relative to compare with.
+The standard external reference for LOS guidance is Fossen's work on guidance-based path following (for instance Breivik and Fossen); I did not check it here.
+\end{warnbox}
+\begin{selfcheck}
+\chk{With $y_d$ the line's lateral position and $y$ the drone's, which sign of cross-track error makes $\psi_d$ positive, and does the drone turn towards the line?}
+\chk{What do large and small $\Delta$ do to the intercept angle and to the speed of convergence? Compare with $k_{path}$ on slide 9.}
+\chk{In 3.7, $\dot x_d=V\cos\psi_d$ and $\dot y_d=V\sin\psi_d$ are \emph{desired velocities}. How do they enter the $\dot p_d$ of the controller, and what is $\ddot p_d$ now?}
+\end{selfcheck}
+
+% =====================================================================
+\section*{Area 9 - Closing synthesis (30 min)}
+
+\begin{itemize}
+\item \texttt{lectures-22-23/COURSE\_NOTES.pdf}: how modelling, control, estimation and guidance connect.
+\item \texttt{labs-25-26/notes/03-lab3.pdf}, last two sections: the connections to the lectures and the open questions (some of them are answered in Area 6 above).
+\item Lab 2 link: the TT controller uses a position and velocity that come from integrated optical-flow velocity. If you ever fly it, that is the Lab 2 estimation problem in practice.
+\end{itemize}
+
+% =====================================================================
+\section*{Suggested schedule}
+
+\begin{tabularx}{\textwidth}{@{}l X l@{}}
+\toprule
+Step & Area & Time\\
+\midrule
+1 & 0 and 1, then solve 2.1 and 2.2 on paper & about 2.5 h\\
+2 & 2 and 3, then solve 2.3 & about 2 h\\
+3 & 4, then solve 2.4 to 2.6 & about 2.5 h\\
+4 & 5, then solve 2.7 and 2.8 & about 1.5 h\\
+5 & 6, open the models, run the template once & about 1.5 h\\
+6 & 7 and 8, derive the trajectories and the LOS geometry & about 1.5 h\\
+7 & 9, then review all self-checks & about 1 h\\
+\bottomrule
+\end{tabularx}
+The times are rough estimates, not measurements.
+The theoretical questions are meant to be solved before the session, the simulations during it.
+
+\subsection*{Minimal path if short on time}
+
+\begin{enumerate}[nosep,leftmargin=1.5em]
+\item Ch3 deck 3 to 13, Ch4 deck 26 and 31 to 40.
+\item Ch7 deck 17 to 31, Ch7-II deck 14 to 18 and 27 to 29.
+\item Area 6 of this sheet, with the three warnings.
+\item Ch8 deck 5 to 11 and 19.
+\end{enumerate}
+
+\subsection*{Questions I would like to check you on later}
+
+\begin{itemize}
+\item Why is the whole position loop linear after the change of coordinates, and where does the non-linearity go?
+\item Why is $\dot V_2$ only semi-definite, and what closes the proof in the lab system but not in the scalar example?
+\item What does the adaptive state become in the Simulink block, and why is it reset when tracking is off?
+\item Why does pointing the nose at the circle's centre not remove the tracking error, and what would?
+\item What do $\Delta$ and $V$ do in 3.7?
+\end{itemize}
+
+\end{document}

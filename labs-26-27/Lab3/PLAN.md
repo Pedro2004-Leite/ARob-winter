@@ -1,15 +1,15 @@
 # Lab 3 (26/27) - preparation plan
 
-Status: **draft plan, 2026-10-18**.
+Status: **plan updated 2026-11-16, 2026/27 guide and devkit received**.
 Nothing is solved here on purpose.
 This file is a roadmap so the theoretical questions can be attacked in a calm, ordered way, and reviewed together later.
 
-## Important caveat
+## Source material
 
-The 2026/27 Lab 3 guide is **not out yet**.
-This plan is built on the **2025/26 Lab 3 guide** (`labs-25-26/25_26_UAVs_Lab3.pdf`) and the notes in `labs-25-26/notes/03-lab3.tex`.
-The Lab 2 guides of the two years are identical except for the date, so Lab 3 is likely the same, but that is an inference.
-When the new guide arrives, diff it against the 2025/26 one (`pdftotext` + `diff`) and update this plan.
+The 2026/27 guide (`26_27_UAVs_Lab3.pdf`) and devkit (`DevKit_Lab3/`) are now in this folder.
+Checked on 2026-11-16: the guide is identical to the 2025/26 one (`labs-25-26/25_26_UAVs_Lab3.pdf`) except for the dates and some cross-references that show as "??" in the PDF text.
+The devkit is identical to `labs-25-26/DevKit_Lab3/` (`diff -rq` shows no differences).
+So the notes in `labs-25-26/notes/03-lab3.tex` apply as they are.
 
 ## What the lab is about
 
@@ -52,7 +52,7 @@ These can be prepared before the session without the drone.
 | 3.6 | Yaw pointing at the circle centre; is that enough for zero tracking error? | The 2.8 remark that yaw is not constrained by the linear dynamics; if not enough, propose a controller change (likely the adaptive term from 2.5) |
 | 3.7 | Line-of-sight straight-line following: psi_d = arctan(-(y - yd)/Delta), xd-dot = V cos(psi_d), yd-dot = V sin(psi_d) | Choose Delta and V; discuss their effect on convergence (see Ch8 on LOS guidance) |
 
-Devkit starting point: `labs-25-26/DevKit_Lab3/ARDroneSimulinkDevKit_V1.1/` (start with `start_here_CTRL.m`, option (4) Trajectory Tracking, models `ARDroneTTSim.slx` and `ARDroneTT.slx`).
+Devkit starting point: `DevKit_Lab3/ARDroneSimulinkDevKit_V1.1/` (start with `start_here_CTRL.m`, option (4) Trajectory Tracking, models `ARDroneTTSim.slx` and `ARDroneTT.slx`).
 The two empty MATLAB Function blocks to fill are `desired_trajectory` and `tt_controller`.
 The 25/26 notes flag that the exact signal units (rad or normalized command) are not documented and must be checked inside the `.slx`.
 
@@ -63,17 +63,17 @@ The 25/26 notes flag that the exact signal units (rad or normalized command) are
 3. Solve 2.4 to 2.6 on paper (adaptive chain), with the LaSalle/Barbalat step done carefully.
 4. Solve 2.7 and 2.8.
 5. Review the written solutions together (Pedro asked for this review later).
-6. Copy the 25/26 devkit to `labs-26-27/Lab3/` once the new guide is out, and check whether it changed.
+6. Devkit is already in `DevKit_Lab3/` and unchanged from 25/26 (done).
 7. Write and test the two Simulink blocks in simulation (3.1 to 3.7).
-8. Decide whether any real flights are needed once the 2026/27 guide says so.
+8. The 2026/27 guide asks for no real flights, only simulation and MATLAB code (the Wi-Fi model `ARDroneTT.slx` exists but is not required).
 
-## Report constraints (from the 25/26 guide, check again for 26/27)
+## Report constraints (2026/27 guide, same as 25/26)
 
 - Single-column PDF, at most 15 pages, with the MATLAB scripts.
-- Cover page from the course website (`labs-25-26/25_26_UAVs_Lab_report_cover_page.docx`, or the 26/27 copy in Lab 1).
+- Cover page from the course website (`../Lab1/26_27_UAVs_Lab_report_cover_page.docx`, not yet copied here).
 - Theoretical questions should be solved before the lab session, simulations done during the session.
 
 ## Notes for future self
 
-- Do not edit the 25/26 files; copy them into this folder when needed.
+- Do not edit the 25/26 files.
 - Keep a solutions file like the Lab 1 one (`labs-26-27/Lab1/solutions/`), kept as a self-check, and extend that one file instead of creating new ones.

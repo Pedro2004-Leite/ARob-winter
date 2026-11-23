@@ -24,7 +24,7 @@ function cfg = tt_config()
 %   compatible with code generation (MATLAB Function blocks).
 %#codegen
 
-EXPERIMENT = 1;   % <-- select the experiment here
+EXPERIMENT = 4;   % <-- select the experiment here
 
 % ---------------------------------------------------------------------
 % Codes (do not change)

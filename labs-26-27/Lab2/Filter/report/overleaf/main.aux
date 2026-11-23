@@ -1,0 +1,48 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\providecommand \babel@aux [2]{\global \let \babel@toc \@gobbletwo }
+\@nameuse{bbl@beforestart}
+\citation{batista2011}
+\citation{guia}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Synthetic experiment: error after 10 s and estimated bias}}{1}{table.caption.2}\protected@file@percent }
+\newlabel{tab:sim}{{1}{1}{Synthetic experiment: error after 10 s and estimated bias}{table.caption.2}{}}
+\babel@aux{english}{}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Model and filter}{1}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:model}{{5.1}{1}{Model and filter}{subsection.5.1}{}}
+\newlabel{eq:riccati}{{1}{1}{Model and filter}{equation.1}{}}
+\newlabel{eq:angles}{{2}{1}{Model and filter}{equation.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Implementation and tuning}{1}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:impl}{{5.2}{1}{Implementation and tuning}{subsection.5.2}{}}
+\newlabel{eq:tuning}{{3}{1}{Implementation and tuning}{equation.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Results}{1}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:results}{{5.3}{1}{Results}{subsection.5.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.1}Simulation with known truth}{1}{subsubsection.5.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Synthetic experiment (ideal case). Top: true roll and pitch (black) and estimated roll and pitch (blue and red), from 10 to 25~s. Bottom: attitude error (the first 3~s fall outside the axes).}}{1}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:sim_att}{{1}{1}{Synthetic experiment (ideal case). Top: true roll and pitch (black) and estimated roll and pitch (blue and red), from 10 to 25~s. Bottom: attitude error (the first 3~s fall outside the axes)}{figure.caption.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Gyro bias estimate (colour) and true bias (black). Top: synthetic experiment. Bottom: experiment D with an artificial bias of $[3,\,-2,\,1]$~deg/s added to the gyros.}}{2}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:bias}{{2}{2}{Gyro bias estimate (colour) and true bias (black). Top: synthetic experiment. Bottom: experiment D with an artificial bias of $[3,\,-2,\,1]$~deg/s added to the gyros}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.2}Real data}{2}{subsubsection.5.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Experiment D (pitch steps). Roll and pitch: inclinometer (grey), onboard estimator (black) and Batista filter (blue).}}{2}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:real_D}{{3}{2}{Experiment D (pitch steps). Roll and pitch: inclinometer (grey), onboard estimator (black) and Batista filter (blue)}{figure.caption.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Experiment E ($y$ mission). Roll and pitch: inclinometer (grey), onboard estimator (black) and Batista filter (blue).}}{2}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:real_E}{{4}{2}{Experiment E ($y$ mission). Roll and pitch: inclinometer (grey), onboard estimator (black) and Batista filter (blue)}{figure.caption.5}{}}
+\citation{guia}
+\bibcite{batista2011}{1}
+\bibcite{guia}{2}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Real data against the onboard estimator (standard deviation / mean of the error, in deg; $\phi /\theta $)}}{3}{table.caption.6}\protected@file@percent }
+\newlabel{tab:real}{{2}{3}{Real data against the onboard estimator (standard deviation / mean of the error, in deg; $\phi /\theta $)}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.3}Gyro bias}{3}{subsubsection.5.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.3.4}Sensitivity to the tuning}{3}{subsubsection.5.3.4}\protected@file@percent }
+\newlabel{sec:sens}{{5.3.4}{3}{Sensitivity to the tuning}{subsubsection.5.3.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Error (deg) for different values of $\alpha $ and $q_b$ (RMS in the synthetic case, standard deviation against the onboard estimator in D and E, $\phi $ and $\theta $ combined). Adopted values in bold; ``div.'' means that the simulation diverges.}}{3}{table.caption.7}\protected@file@percent }
+\newlabel{tab:sens}{{3}{3}{Error (deg) for different values of $\alpha $ and $q_b$ (RMS in the synthetic case, standard deviation against the onboard estimator in D and E, $\phi $ and $\theta $ combined). Adopted values in bold; ``div.'' means that the simulation diverges}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations and conclusion}{3}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:limits}{{5.4}{3}{Limitations and conclusion}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Simulink diagram}{3}{appendix.A}\protected@file@percent }
+\newlabel{app:simulink}{{A}{3}{Simulink diagram}{appendix.A}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Simulink model of the filter (simulation version). The model has four blocks: \texttt  {KalmanBucy} computes $\dot  {\hat  {\boldsymbol  {x}}}$ and $\dot  P$ from \eqref  {eq:riccati}, the integrators \texttt  {Int\_x} and \texttt  {Int\_P} close the loop, and \texttt  {Attitude} applies \eqref  {eq:angles}. In simulation, \texttt  {Truth} generates the exact roll, pitch and sensor readings, and \texttt  {Noise} and \texttt  {Bias} corrupt them. In replay, \texttt  {Truth}, \texttt  {Noise} and \texttt  {Bias} are replaced by the recorded data, and the onboard estimator of the drone is used as reference.}}{4}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:sim_model}{{5}{4}{Simulink model of the filter (simulation version). The model has four blocks: \texttt {KalmanBucy} computes $\dot {\hatx }$ and $\dot P$ from \eqref {eq:riccati}, the integrators \texttt {Int\_x} and \texttt {Int\_P} close the loop, and \texttt {Attitude} applies \eqref {eq:angles}. In simulation, \texttt {Truth} generates the exact roll, pitch and sensor readings, and \texttt {Noise} and \texttt {Bias} corrupt them. In replay, \texttt {Truth}, \texttt {Noise} and \texttt {Bias} are replaced by the recorded data, and the onboard estimator of the drone is used as reference}{figure.caption.9}{}}
+\gdef \@abspage@last{4}
