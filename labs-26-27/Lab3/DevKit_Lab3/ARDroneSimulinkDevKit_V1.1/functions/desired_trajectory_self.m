@@ -1,4 +1,4 @@
-function [pd, dot_pd, ddot_pd, psi_d] = desired_trajectory_self(dt, p0, states)
+function [pd, dot_pd, ddot_pd, psi_d, type] = desired_trajectory_self(dt, p0, states)
 %#codegen
 % ------------------------------------------------------------------------
 % Trajectory planner (Q3.2, Q3.4, Q3.6, Q3.7). Selected in tt_config.m.
@@ -18,11 +18,11 @@ persistent pd_los dt_prev
 cfg = tt_config();
 tr = cfg.traj;
 
-pd      = [p0(1:2); -tr.height];
+pd      = [p0(1:2); 1];
 dot_pd  = [0;0;0];
 ddot_pd = [0;0;0];
 psi_d   = tr.psi;
-
+type = tr.type;
 if isempty(pd_los)
     pd_los  = p0(1:2);
     dt_prev = 0;

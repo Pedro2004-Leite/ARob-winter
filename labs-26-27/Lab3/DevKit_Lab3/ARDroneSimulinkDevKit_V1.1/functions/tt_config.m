@@ -24,7 +24,7 @@ function cfg = tt_config()
 %   compatible with code generation (MATLAB Function blocks).
 %#codegen
 
-EXPERIMENT = 0;   % <-- select the experiment here (0 = hover, first flight)
+EXPERIMENT = 1;   % <-- select the experiment here (0 = hover, first flight)
 
 % ---------------------------------------------------------------------
 % Codes (do not change)
